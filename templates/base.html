@@ -63,7 +63,7 @@
 {% block body %}{% endblock %}
 
 <!-- WS test widget condiviso da tutte le pagine — solo per Tappa 1 -->
-<div x-data="wsTester({{ role|tojson }})" x-init="connect()"
+<div x-data='wsTester({{ role|tojson }})' x-init='connect()'
      class="fixed bottom-3 right-3 z-50 toon p-3 max-w-sm" style="opacity: 0.96;">
   <div class="flex items-center justify-between gap-3 mb-2">
     <div class="flex items-center gap-2">
