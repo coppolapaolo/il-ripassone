@@ -38,11 +38,7 @@
   .toon-yellow { background: var(--yellow); }
   .toon-coral { background: var(--coral); color: #fff; }
   .toon-teal { background: var(--teal); color: #fff; }
-  .title-outlined {
-    color: #fff;
-    -webkit-text-stroke: 2px var(--navy);
-    text-shadow: 3px 3px 0 var(--navy);
-  }
+  .title-outlined { color: #fff; -webkit-text-stroke: 2px var(--navy); text-shadow: 3px 3px 0 var(--navy); }
   .pip { width: 7px; height: 7px; border-radius: 99px; display: inline-block; border: 1.5px solid var(--navy); }
   @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
   .pip-live { background: var(--green); animation: blink 1.6s ease-in-out infinite; }
@@ -56,60 +52,89 @@
   .btn-toon:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--navy); }
   .btn-toon.coral { background: var(--coral); color: #fff; }
   .btn-toon.teal { background: var(--teal); color: #fff; }
+  .btn-toon.green { background: var(--green); color: #fff; }
+  .btn-toon:disabled { opacity: 0.4; cursor: not-allowed; }
+  .input-toon {
+    background: #fff; border: 2.5px solid var(--navy); border-radius: 10px;
+    padding: 8px 12px; font-size: 14px; box-shadow: 3px 3px 0 var(--navy);
+    color: var(--navy); width: 100%;
+  }
+  .json-pre {
+    background: #0F172A; color: #F5C44A;
+    padding: 12px; border-radius: 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    overflow: auto; max-height: 60vh;
+    border: 2.5px solid var(--navy); box-shadow: 3px 3px 0 var(--navy);
+  }
+  .json-pre .k { color: #4ABEC8; }
+  .json-pre .s { color: #4FB955; }
+  .json-pre .n { color: #F89A8E; }
+  .json-pre .b { color: #F5C44A; font-weight: 700; }
 </style>
 {% block head_extra %}{% endblock %}
 </head>
-<body>
+<body x-data='ripassoneClient({{ role|tojson }})' x-init='connect()'>
+
 {% block body %}{% endblock %}
 
-<!-- WS test widget condiviso da tutte le pagine — solo per Tappa 1 -->
-<div x-data='wsTester({{ role|tojson }})' x-init='connect()'
-     class="fixed bottom-3 right-3 z-50 toon p-3 max-w-sm" style="opacity: 0.96;">
-  <div class="flex items-center justify-between gap-3 mb-2">
-    <div class="flex items-center gap-2">
-      <span class="pip" :class="connected ? 'pip-live' : 'pip-dead'"></span>
-      <span class="display-font text-sm uppercase">WS · <span x-text="role"></span></span>
-    </div>
-    <span class="text-[11px]" style="color:var(--navy-soft)">connessi: <span class="display-font text-sm" x-text="presence"></span></span>
-  </div>
-  <div class="flex items-center gap-2 mb-2">
-    <input x-model="text" @keydown.enter="ping()" placeholder="messaggio…" class="toon-sm toon px-2 py-1 text-sm flex-1" style="background:#fff;"/>
-    <button @click="ping()" class="btn-toon coral text-xs" style="padding: 6px 10px;">ping</button>
-  </div>
-  <div class="text-[11px] max-h-32 overflow-auto mono space-y-0.5" style="color:var(--navy-soft)">
-    <template x-for="(m, i) in log" :key="i">
-      <div class="truncate" x-text="m"></div>
-    </template>
-  </div>
+<!-- Status WS sempre visibile in basso a destra -->
+<div class="fixed bottom-3 right-3 z-50 toon-sm toon px-3 py-1.5 flex items-center gap-2"
+     style="background: rgba(255,255,255,0.96);">
+  <span class="pip" :class="connected ? 'pip-live' : 'pip-dead'"></span>
+  <span class="display-font text-xs uppercase">WS · <span x-text="role"></span></span>
+  <span class="text-[11px]" style="color:var(--navy-soft)">phase: <b style="color:var(--navy)" x-text="state?.phase"></b></span>
+  <template x-if="lastError">
+    <span class="text-[11px]" style="color:var(--coral); font-weight:600;" x-text="'⚠ ' + lastError"></span>
+  </template>
 </div>
 
 <script>
-function wsTester(role) {
+function ripassoneClient(role) {
   return {
     role,
-    ws: null, connected: false,
-    presence: 0, text: '', log: [],
+    ws: null,
+    connected: false,
+    state: null,           // ultimo state/full ricevuto
+    lastError: null,
+    /* eventi non-state ricevuti, utili al singolo template */
+    events: [],
+    /* memoria per il client (sopravvive ai refresh) */
+    me: JSON.parse(localStorage.getItem('ripassone.me') || 'null'),
+
     connect() {
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       this.ws = new WebSocket(`${proto}://${location.host}/ws`);
-      this.ws.onopen    = () => { this.connected = true;  this.log.unshift('▸ open'); };
-      this.ws.onclose   = () => { this.connected = false; this.log.unshift('✕ close'); };
-      this.ws.onerror   = () => { this.log.unshift('! error'); };
+      this.ws.onopen = () => { this.connected = true; };
+      this.ws.onclose = () => { this.connected = false; };
+      this.ws.onerror = () => { this.lastError = 'WebSocket error'; };
       this.ws.onmessage = (e) => {
-        const m = JSON.parse(e.data);
-        if (m.type === 'presence') this.presence = m.connected;
-        this.log.unshift(`← ${e.data}`);
-        if (this.log.length > 30) this.log.length = 30;
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'state/full')      { this.state = msg.data; this.lastError = null; }
+        else if (msg.type === 'state/error') { this.lastError = msg.msg; setTimeout(() => this.lastError = null, 5000); }
+        else if (msg.type === 'team/joined') {
+          this.me = msg.data;
+          localStorage.setItem('ripassone.me', JSON.stringify(this.me));
+        }
+        this.events.unshift(msg);
+        if (this.events.length > 50) this.events.length = 50;
       };
     },
-    ping() {
-      if (!this.text || !this.ws || this.ws.readyState !== 1) return;
-      const msg = { from: this.role, text: this.text };
-      this.ws.send(JSON.stringify(msg));
-      this.log.unshift(`→ ${JSON.stringify(msg)}`);
-      this.text = '';
+    send(type, data = {}) {
+      if (!this.ws || this.ws.readyState !== 1) return;
+      this.ws.send(JSON.stringify({ type, data }));
     },
+    forgetMe() { this.me = null; localStorage.removeItem('ripassone.me'); },
   }
+}
+
+/* JSON syntax highlight semplice per i viewer template */
+function jsonHL(o) {
+  return JSON.stringify(o, null, 2)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("([^"\\]|\\.)*")(\s*:)/g, '<span class="k">$1</span>$3')
+    .replace(/:\s*("([^"\\]|\\.)*")/g, ': <span class="s">$1</span>')
+    .replace(/:\s*(true|false|null)/g, ': <span class="b">$1</span>')
+    .replace(/:\s*(-?\d+(\.\d+)?([eE][+-]?\d+)?)/g, ': <span class="n">$1</span>');
 }
 </script>
 </body>

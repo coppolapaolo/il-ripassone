@@ -1,14 +1,78 @@
 {% extends "base.html" %}
 {% block title %}Admin · Il Ripassone{% endblock %}
 {% block body %}
-<div class="min-h-screen flex flex-col items-center justify-center p-8 gap-6">
-  <div class="toon toon-yellow px-6 py-3 -rotate-1">
-    <h1 class="display-font text-4xl title-outlined leading-none">IL RIPASSONE!</h1>
-  </div>
-  <div class="toon p-8 max-w-xl text-center">
-    <div class="display-font text-2xl mb-2" style="color:var(--coral);">⚙ Admin</div>
-    <p class="text-base mb-4">Vista admin in fase di sviluppo. Per ora mostra solo che il routing FastAPI funziona.</p>
-    <p class="text-sm" style="color:var(--navy-soft);">Il widget WS in basso a destra prova la connessione bidirezionale: scrivi un messaggio e premi <b>ping</b>. Apri anche <code class="mono">/team</code> e <code class="mono">/display</code> in altre tab — vedrai gli echo arrivare a tutti.</p>
-  </div>
+<div class="min-h-screen flex flex-col p-6 gap-4">
+  <header class="flex items-center justify-between">
+    <div class="toon toon-yellow toon-sm px-4 py-2 -rotate-1">
+      <h1 class="display-font text-2xl title-outlined leading-none">IL RIPASSONE!</h1>
+    </div>
+    <span class="display-font text-sm uppercase" style="color:var(--coral)">⚙ Admin</span>
+  </header>
+
+  <!-- Bottoni di controllo della state machine -->
+  <section class="toon p-4 flex flex-wrap items-center gap-2">
+    <span class="display-font text-xs uppercase mr-2" style="color:var(--navy-soft)">Eventi admin (Tappa 2)</span>
+
+    <button class="btn-toon green" @click="send('admin/configure', { rounds: 6, seconds: 30, initial_points: 100, min_bet: 5, max_bet: 50 })">
+      ⚙ Configure default
+    </button>
+
+    <button class="btn-toon coral"
+            :disabled="state?.phase !== 'lobby'"
+            @click="send('admin/start_quiz')">
+      ▶ Start quiz
+    </button>
+
+    <button class="btn-toon"
+            :disabled="state?.phase !== 'turn_reveal'"
+            @click="send('admin/next_turn')">
+      ⏭ Next turn
+    </button>
+
+    <span class="ml-auto text-xs" style="color:var(--navy-soft)">
+      phase: <b style="color:var(--navy)" x-text="state?.phase"></b>
+      · round <b x-text="state?.rounds?.length || 0"></b>/<b x-text="state?.settings?.rounds || '?'"></b>
+      · squadre <b x-text="Object.keys(state?.teams || {}).length"></b>
+    </span>
+  </section>
+
+  <!-- Squadre + giocatori (live) -->
+  <section class="toon p-4">
+    <div class="display-font text-sm uppercase mb-3" style="color:var(--navy-soft)">Squadre live</div>
+    <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+      <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
+        <div class="toon-sm toon p-3" :style="`border-color:${t.color}; box-shadow: 3px 3px 0 ${t.color};`">
+          <div class="flex items-center justify-between mb-1">
+            <span class="display-font text-base" :style="`color:${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></span>
+            <span class="display-font text-xl tabular-nums" x-text="t.score"></span>
+          </div>
+          <div class="text-[11px] mb-1" style="color:var(--navy-soft)">
+            id: <span class="mono" x-text="t.id"></span>
+            · capitano: <span class="mono" x-text="t.captain_id || '—'"></span>
+          </div>
+          <div class="text-[11px] flex flex-wrap gap-1">
+            <template x-for="p in Object.values(state?.players || {}).filter(p => p.team_id === t.id)" :key="p.id">
+              <span class="px-1.5 py-0.5 rounded toon-sm toon" style="background:#fff; box-shadow: 2px 2px 0 var(--navy); border-width: 1.5px;">
+                <span x-text="p.first_name + ' ' + p.last_name"></span>
+                <span x-show="p.id === t.captain_id" style="color:var(--coral)" class="font-bold">★</span>
+              </span>
+            </template>
+          </div>
+        </div>
+      </template>
+      <template x-if="!Object.keys(state?.teams || {}).length">
+        <div class="text-sm" style="color:var(--navy-soft)">Nessuna squadra ancora. Apri <code class="mono">/team</code> in altre tab per iscrivere giocatori.</div>
+      </template>
+    </div>
+  </section>
+
+  <!-- JSON viewer -->
+  <section class="toon p-4">
+    <div class="flex items-center justify-between mb-2">
+      <span class="display-font text-sm uppercase" style="color:var(--navy-soft)">state/full · raw JSON</span>
+      <span class="text-[11px]" style="color:var(--navy-soft)">aggiornato in real-time via WS</span>
+    </div>
+    <pre class="json-pre" x-html="state ? jsonHL(state) : 'in attesa…'"></pre>
+  </section>
 </div>
 {% endblock %}

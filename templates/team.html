@@ -1,14 +1,73 @@
 {% extends "base.html" %}
 {% block title %}Squadra · Il Ripassone{% endblock %}
 {% block body %}
-<div class="min-h-screen flex flex-col items-center justify-center p-6 gap-6">
-  <div class="toon toon-yellow px-5 py-2.5 -rotate-1">
-    <h1 class="display-font text-3xl title-outlined leading-none">IL RIPASSONE!</h1>
-  </div>
-  <div class="toon p-6 max-w-md w-full text-center">
-    <div class="display-font text-2xl mb-2" style="color:var(--teal-deep);">🎮 Squadra</div>
-    <p class="text-sm mb-3">Vista squadra in fase di sviluppo.</p>
-    <p class="text-xs" style="color:var(--navy-soft);">Il widget WS in basso a destra prova la connessione. Pingando da qui vedrai l'echo arrivare anche su <code class="mono">/admin</code> e <code class="mono">/display</code>.</p>
-  </div>
+<div class="min-h-screen flex flex-col p-4 gap-3 max-w-md mx-auto w-full">
+  <header class="flex items-center justify-between">
+    <div class="toon toon-yellow toon-sm px-3 py-1.5 -rotate-1">
+      <h1 class="display-font text-lg title-outlined leading-none">IL RIPASSONE!</h1>
+    </div>
+    <span class="display-font text-[11px] uppercase" style="color:var(--navy-soft)">🎮 Squadra</span>
+  </header>
+
+  <!-- Form join (visibile solo se non ancora joinati) -->
+  <section class="toon p-4" x-show="!me" x-data="{ f:'', l:'', t:'' }">
+    <div class="display-font text-base mb-3">Iscriviti al quiz</div>
+    <form @submit.prevent="send('team/join', { first_name: f, last_name: l, team_name: t })" class="flex flex-col gap-2">
+      <input class="input-toon" placeholder="Nome" x-model="f" required>
+      <input class="input-toon" placeholder="Cognome" x-model="l" required>
+      <input class="input-toon" placeholder="Nome squadra" x-model="t" required>
+      <button class="btn-toon coral mt-1" type="submit"
+              :disabled="state?.phase !== 'setup' && state?.phase !== 'lobby'">
+        Entra
+      </button>
+      <span class="text-[11px]" x-show="state?.phase !== 'setup' && state?.phase !== 'lobby'" style="color:var(--coral)">
+        L'iscrizione e chiusa (fase: <span x-text="state?.phase"></span>)
+      </span>
+    </form>
+  </section>
+
+  <!-- Stato joinato -->
+  <section class="toon p-4" x-show="me" x-cloak>
+    <div class="display-font text-sm uppercase mb-1" style="color:var(--navy-soft)">Sei iscritto come</div>
+    <div class="display-font text-xl" x-text="me?.first_name + ' ' + me?.last_name"></div>
+    <div class="text-sm mt-1" style="color:var(--navy-soft)">
+      squadra:
+      <span class="display-font text-base"
+            :style="`color: ${state?.teams?.[me?.team_id]?.color || 'var(--navy)'}; -webkit-text-stroke: 0.4px var(--navy);`"
+            x-text="state?.teams?.[me?.team_id]?.name"></span>
+      ·
+      <span class="display-font text-base" x-text="state?.teams?.[me?.team_id]?.score + ' pt'"></span>
+    </div>
+    <div class="text-xs mt-1" x-show="state?.teams?.[me?.team_id]?.captain_id === me?.id" style="color:var(--coral)">
+      ★ Sei il capitano
+    </div>
+    <button class="btn-toon mt-3" style="font-size: 12px; padding: 6px 10px;" @click="forgetMe()">forget me (debug)</button>
+  </section>
+
+  <!-- Squadre live -->
+  <section class="toon p-3">
+    <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">Squadre in lobby</div>
+    <div class="flex flex-col gap-1.5">
+      <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
+        <div class="flex items-center justify-between text-sm">
+          <span class="display-font" :style="`color:${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></span>
+          <span class="text-xs" style="color:var(--navy-soft)">
+            <span x-text="Object.values(state?.players || {}).filter(p => p.team_id === t.id).length"></span> membri
+            · <span class="display-font text-sm" style="color:var(--navy)" x-text="t.score"></span> pt
+          </span>
+        </div>
+      </template>
+      <template x-if="!Object.keys(state?.teams || {}).length">
+        <div class="text-xs" style="color:var(--navy-soft)">Nessuna squadra ancora.</div>
+      </template>
+    </div>
+  </section>
+
+  <!-- JSON viewer compatto -->
+  <section class="toon p-3">
+    <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">state · debug</div>
+    <pre class="json-pre" style="font-size: 10.5px;" x-html="state ? jsonHL({phase: state.phase, teams: Object.keys(state.teams||{}).length, players: Object.keys(state.players||{}).length, round: state.rounds?.length}) : '…'"></pre>
+  </section>
 </div>
+
 {% endblock %}

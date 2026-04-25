@@ -1,14 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Display · Il Ripassone{% endblock %}
 {% block body %}
-<div class="min-h-screen flex flex-col items-center justify-center p-10 gap-8">
-  <div class="toon toon-yellow px-8 py-4 -rotate-1">
-    <h1 class="display-font text-6xl title-outlined leading-none">IL RIPASSONE!</h1>
-  </div>
-  <div class="toon p-10 max-w-2xl text-center">
-    <div class="display-font text-3xl mb-3" style="color:var(--coral);">📺 Display pubblico</div>
-    <p class="text-lg mb-2">In attesa che l'admin avvii la partita…</p>
-    <p class="text-sm" style="color:var(--navy-soft);">Quando la partita sarà attiva, qui apparirà la domanda corrente, il countdown e i punteggi delle squadre.</p>
-  </div>
+<div class="min-h-screen flex flex-col p-6 gap-4">
+  <header class="flex items-center justify-between">
+    <div class="toon toon-yellow toon-sm px-4 py-2 -rotate-1">
+      <h1 class="display-font text-2xl title-outlined leading-none">IL RIPASSONE!</h1>
+    </div>
+    <span class="display-font text-sm uppercase" style="color:var(--coral)">📺 Display</span>
+  </header>
+
+  <!-- Phase banner -->
+  <section class="toon p-5 text-center">
+    <div class="display-font text-xs uppercase mb-1" style="color:var(--navy-soft)">Fase corrente</div>
+    <div class="display-font text-5xl" x-text="state?.phase || '…'"></div>
+    <div class="text-sm mt-2" style="color:var(--navy-soft)">
+      Round <b x-text="state?.rounds?.length || 0"></b> di <b x-text="state?.settings?.rounds || '?'"></b>
+      · Squadre: <b x-text="Object.keys(state?.teams || {}).length"></b>
+      · Giocatori: <b x-text="Object.keys(state?.players || {}).length"></b>
+    </div>
+  </section>
+
+  <!-- Squadre live -->
+  <section class="toon p-4">
+    <div class="display-font text-sm uppercase mb-3" style="color:var(--navy-soft)">Squadre</div>
+    <div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+      <template x-for="t in Object.values(state?.teams || {}).sort((a,b) => b.score - a.score)" :key="t.id">
+        <div class="toon-sm toon p-3" :style="`border-color:${t.color}; box-shadow: 4px 4px 0 ${t.color};`">
+          <div class="display-font text-lg leading-tight" :style="`color:${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></div>
+          <div class="display-font text-3xl tabular-nums mt-1" x-text="t.score"></div>
+          <div class="text-[11px]" style="color:var(--navy-soft)">
+            <span x-text="Object.values(state?.players || {}).filter(p => p.team_id === t.id).length"></span> membri
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- JSON viewer -->
+  <section class="toon p-4">
+    <div class="display-font text-sm uppercase mb-2" style="color:var(--navy-soft)">state/full · debug</div>
+    <pre class="json-pre" x-html="state ? jsonHL(state) : 'in attesa…'"></pre>
+  </section>
 </div>
 {% endblock %}
