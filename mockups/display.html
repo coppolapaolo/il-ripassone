@@ -252,22 +252,17 @@
     </div>
   </div>
 
-  <!-- HEADER: hero compatto + round + countdown -->
+  <!-- HEADER: hero grande + round + countdown -->
   <header class="flex items-center justify-between gap-6">
-    <!-- Brand: titolo cartoon CSS (no immagine, scala perfetto) -->
-    <div class="flex items-center gap-4">
-      <div class="toon toon-yellow toon-sm px-5 py-2.5 -rotate-2">
-        <h1 class="display-font text-4xl title-outlined leading-none">IL RIPASSONE!</h1>
-      </div>
-      <span class="display-font text-sm text-[var(--navy-soft)] uppercase tracking-widest hidden lg:inline">DIPA · L19 · 2026</span>
-    </div>
+    <!-- Brand: hero image cartoon -->
+    <img src="assets/hero.png" alt="Il Ripassone!" class="h-44 w-auto" style="filter: drop-shadow(4px 4px 0 var(--navy));"/>
 
     <!-- Round badge -->
-    <div class="toon toon-cream toon-sm px-5 py-2.5 flex items-baseline gap-2.5 rotate-1">
-      <span class="display-font text-xs uppercase">Round</span>
-      <span class="display-font text-3xl leading-none" x-text="round"></span>
-      <span class="text-[var(--navy-soft)]">/</span>
-      <span class="display-font text-2xl leading-none" x-text="totalRounds"></span>
+    <div class="toon toon-cream toon-sm px-5 py-3 flex items-baseline gap-2.5 rotate-1">
+      <span class="display-font text-sm uppercase">Round</span>
+      <span class="display-font text-4xl leading-none" x-text="round"></span>
+      <span class="text-[var(--navy-soft)] text-2xl">/</span>
+      <span class="display-font text-3xl leading-none" x-text="totalRounds"></span>
     </div>
 
     <!-- Countdown — DOMINANTE, sempre visibile da fondo aula -->
@@ -373,16 +368,16 @@
     </div>
   </section>
 
-  <!-- OPZIONI -->
-  <section class="grid grid-cols-1 gap-3 px-1">
+  <!-- OPZIONI — griglia 2x2 -->
+  <section class="grid grid-cols-2 gap-3 px-1">
     <template x-for="opt in question.options" :key="opt.letter">
-      <div class="toon toon-sm flex items-center gap-5 px-5 py-3.5"
+      <div class="toon toon-sm flex items-center gap-4 px-5 py-3.5"
            :class="phase === 'reveal' && (opt.letter === question.correct ? 'reveal-correct' : 'reveal-wrong')">
         <div class="opt-letter" x-text="opt.letter"></div>
-        <div class="text-2xl font-medium leading-snug flex-1" x-text="opt.text"></div>
+        <div class="text-xl font-medium leading-snug flex-1" x-text="opt.text"></div>
         <template x-if="phase === 'reveal' && opt.letter === question.correct">
-          <span class="display-font text-lg flex items-center gap-1.5 px-3 py-1 toon toon-sm" style="background:var(--success); color:#fff; box-shadow: 3px 3px 0 var(--navy);">
-            ✓ CORRETTA!
+          <span class="display-font text-sm flex items-center gap-1.5 px-2.5 py-1 toon toon-sm flex-shrink-0" style="background:var(--success); color:#fff; box-shadow: 3px 3px 0 var(--navy);">
+            ✓ OK!
           </span>
         </template>
       </div>
