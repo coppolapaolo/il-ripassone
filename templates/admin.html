@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Admin · Il Ripassone{% endblock %}
+{% block body %}
+<div class="min-h-screen flex flex-col items-center justify-center p-8 gap-6">
+  <div class="toon toon-yellow px-6 py-3 -rotate-1">
+    <h1 class="display-font text-4xl title-outlined leading-none">IL RIPASSONE!</h1>
+  </div>
+  <div class="toon p-8 max-w-xl text-center">
+    <div class="display-font text-2xl mb-2" style="color:var(--coral);">⚙ Admin</div>
+    <p class="text-base mb-4">Vista admin in fase di sviluppo. Per ora mostra solo che il routing FastAPI funziona.</p>
+    <p class="text-sm" style="color:var(--navy-soft);">Il widget WS in basso a destra prova la connessione bidirezionale: scrivi un messaggio e premi <b>ping</b>. Apri anche <code class="mono">/team</code> e <code class="mono">/display</code> in altre tab — vedrai gli echo arrivare a tutti.</p>
+  </div>
+</div>
+{% endblock %}

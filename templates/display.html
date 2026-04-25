@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Display · Il Ripassone{% endblock %}
+{% block body %}
+<div class="min-h-screen flex flex-col items-center justify-center p-10 gap-8">
+  <div class="toon toon-yellow px-8 py-4 -rotate-1">
+    <h1 class="display-font text-6xl title-outlined leading-none">IL RIPASSONE!</h1>
+  </div>
+  <div class="toon p-10 max-w-2xl text-center">
+    <div class="display-font text-3xl mb-3" style="color:var(--coral);">📺 Display pubblico</div>
+    <p class="text-lg mb-2">In attesa che l'admin avvii la partita…</p>
+    <p class="text-sm" style="color:var(--navy-soft);">Quando la partita sarà attiva, qui apparirà la domanda corrente, il countdown e i punteggi delle squadre.</p>
+  </div>
+</div>
+{% endblock %}
