@@ -1,60 +1,249 @@
 {% extends "base.html" %}
 {% block title %}Display · Il Ripassone{% endblock %}
+{% block head_extra %}
+<style>
+  .cd-ring { background: #fff; transition: all 0.3s; }
+  .cd-warn   .cd-ring { background: linear-gradient(135deg, #FFF7E0 0%, #FBF1D9 100%); }
+  .cd-danger .cd-ring {
+    background: linear-gradient(135deg, #FFE4E0 0%, #FFD0CB 100%);
+    border-color: var(--coral);
+    box-shadow: 10px 10px 0 var(--coral);
+    animation: cdShake 0.5s ease-in-out infinite;
+  }
+  @keyframes cdShake {
+    0%,100% { transform: translateX(0) rotate(0); }
+    25%     { transform: translateX(-4px) rotate(-1deg); }
+    75%     { transform: translateX(4px) rotate(1deg); }
+  }
+  .cd-warn   { animation: cdScale 1s ease-in-out infinite; }
+  .cd-danger { animation: cdScale 0.6s ease-in-out infinite; }
+  @keyframes cdScale { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  .opt-letter-display { width: 72px; height: 72px; font-size: 44px; box-shadow: 3px 3px 0 var(--navy); }
+</style>
+{% endblock %}
+
 {% block body %}
 <div class="min-h-screen flex flex-col p-6 gap-4">
-  <header class="flex items-center justify-between">
-    <div class="toon toon-yellow toon-sm px-4 py-2 -rotate-1">
-      <h1 class="display-font text-2xl title-outlined leading-none">IL RIPASSONE!</h1>
+
+  <!-- ===== FLASH OVERLAY (ultimi 5s) ===== -->
+  <div class="flash-overlay" :class="(state?.phase === 'turn_question' && countdown !== null && countdown <= 5 && countdown > 0) && 'active'"></div>
+
+  <!-- ===== AUDIO GATE iniziale ===== -->
+  <div x-show="!audioReady" class="audio-gate" x-cloak>
+    <div class="audio-gate-card">
+      <img src="/static/img/hero.png" alt="Il Ripassone!" class="h-40 w-auto mx-auto mb-4"/>
+      <p class="text-xl mb-7" style="color:var(--navy)">Clicca per attivare l-audio<br/>e iniziare il quiz</p>
+      <button class="gate-cta" @click="enableAudio()">▶ AVVIA</button>
+      <div class="text-xs mt-5" style="color:var(--navy-soft)">(richiesto dal browser per sbloccare l-audio)</div>
     </div>
-    <span class="display-font text-sm uppercase" style="color:var(--coral)">📺 Display</span>
+  </div>
+
+  <!-- ===== HEADER: Round (sx) + Hero (centro) + Countdown (dx) ===== -->
+  <header class="grid items-center gap-6" style="grid-template-columns: auto 1fr auto;">
+
+    <!-- Round badge -->
+    <div class="toon toon-cream toon-sm px-5 py-3 flex items-baseline gap-2.5 rotate-1">
+      <span class="display-font text-sm uppercase">Round</span>
+      <span class="display-font text-4xl leading-none" x-text="state?.rounds?.length || 0"></span>
+      <span class="text-2xl" style="color:var(--navy-soft)">/</span>
+      <span class="display-font text-3xl leading-none" x-text="state?.settings?.rounds || '?'"></span>
+    </div>
+
+    <!-- Hero centrale -->
+    <div class="flex justify-center">
+      <img src="/static/img/hero.png" alt="Il Ripassone!" class="h-96 w-auto"
+           style="filter: drop-shadow(0 10px 20px rgba(0,0,0,0.20)) drop-shadow(0 3px 6px rgba(0,0,0,0.10));"/>
+    </div>
+
+    <!-- Countdown -->
+    <div class="flex items-center gap-5"
+         :class="countdown !== null && state?.phase === 'turn_question' ? (countdown <= 5 ? 'cd-danger' : (countdown <= 10 ? 'cd-warn' : '')) : ''">
+      <div class="text-right">
+        <div class="display-font text-3xl uppercase leading-none"
+             :style="state?.phase === 'turn_question' && countdown !== null && countdown <= 5 ? 'color:var(--coral)' : (state?.phase === 'turn_question' && countdown !== null && countdown <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy-soft)')">
+          <template x-if="state?.phase !== 'turn_question' || countdown === null">⏱ Tempo</template>
+          <template x-if="state?.phase === 'turn_question' && countdown !== null && countdown > 5">⏱ Tempo!</template>
+          <template x-if="state?.phase === 'turn_question' && countdown !== null && countdown <= 5"><span class="text-4xl">⚠ Forza!</span></template>
+        </div>
+        <div class="text-base mt-2" style="color:var(--navy-soft)" x-show="currentRound()?.seconds_total"
+             x-text="'su ' + currentRound()?.seconds_total + ' s'"></div>
+      </div>
+      <div class="cd-ring w-[220px] h-[220px] relative flex items-center justify-center toon">
+        <svg class="absolute inset-3 -rotate-90" viewBox="0 0 100 100" x-show="countdown !== null && currentRound()?.seconds_total">
+          <circle cx="50" cy="50" r="44" stroke-width="10" fill="none" class="ring-track"/>
+          <circle cx="50" cy="50" r="44" stroke-width="12" fill="none"
+                  class="ring-progress" :class="countdown <= 5 ? 'danger' : (countdown <= 10 ? 'warn' : '')"
+                  stroke-dasharray="276.46"
+                  :stroke-dashoffset="276.46 * (1 - countdown/(currentRound()?.seconds_total || 30))"/>
+        </svg>
+        <span class="display-font tabular-nums leading-none relative"
+              :style="`font-size:152px; ${countdown !== null && countdown <= 5 ? 'color:var(--coral)' : (countdown !== null && countdown <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy)')}`"
+              x-text="countdown !== null ? countdown : '—'"></span>
+      </div>
+    </div>
   </header>
 
-  <!-- Phase banner + countdown live -->
-  <section class="toon p-5 grid items-center gap-4" style="grid-template-columns: 1fr auto;">
+  <div class="ribbon-bar"></div>
+
+  <!-- ===== PHASE: setup/lobby/ready (in attesa) ===== -->
+  <section x-show="['setup','lobby','ready_to_start'].includes(state?.phase)" class="flex-1 flex items-center justify-center" x-cloak>
     <div class="text-center">
-      <div class="display-font text-xs uppercase mb-1" style="color:var(--navy-soft)">Fase corrente</div>
-      <div class="display-font text-5xl" x-text="state?.phase || '…'"></div>
-      <div class="text-sm mt-2" style="color:var(--navy-soft)">
-        Round <b x-text="state?.rounds?.length || 0"></b> di <b x-text="state?.settings?.rounds || '?'"></b>
-        · Squadre: <b x-text="Object.keys(state?.teams || {}).length"></b>
-        · Giocatori: <b x-text="Object.keys(state?.players || {}).length"></b>
+      <div class="display-font text-4xl mb-3" style="color:var(--navy-soft)">In attesa</div>
+      <div class="display-font" style="font-size:80px; color:var(--navy);">
+        <template x-if="state?.phase === 'setup'">Configurazione admin in corso…</template>
+        <template x-if="state?.phase === 'lobby'">Le squadre si stanno formando!</template>
+        <template x-if="state?.phase === 'ready_to_start'">Pronti, via!</template>
+      </div>
+      <div class="mt-5 text-xl" style="color:var(--navy-soft)">
+        <span x-text="Object.keys(state?.teams || {}).length"></span> squadre ·
+        <span x-text="Object.keys(state?.players || {}).length"></span> giocatori ·
+        <span x-text="Object.keys(state?.questions_pool || {}).length"></span> domande in pool
       </div>
     </div>
-    <!-- countdown live -->
-    <template x-if="state?.phase === 'turn_question' && countdown !== null">
-      <div class="text-center">
-        <div class="display-font text-xs uppercase mb-1" style="color:var(--navy-soft)">Tempo</div>
-        <div class="display-font tabular-nums leading-none"
-             :style="`font-size:104px; ${countdown <= 5 ? 'color:var(--coral)' : (countdown <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy)')}`"
-             x-text="countdown"></div>
-        <div class="text-xs mt-1" style="color:var(--navy-soft)">
-          su <span x-text="state?.rounds?.at(-1)?.seconds_total"></span>s
-          (diff. <span x-text="state?.questions_pool?.[state?.rounds?.at(-1)?.question_id]?.difficulty"></span>)
-        </div>
-      </div>
-    </template>
   </section>
 
-  <!-- Squadre live -->
-  <section class="toon p-4">
-    <div class="display-font text-sm uppercase mb-3" style="color:var(--navy-soft)">Squadre</div>
-    <div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
-      <template x-for="t in Object.values(state?.teams || {}).sort((a,b) => b.score - a.score)" :key="t.id">
-        <div class="toon-sm toon p-3" :style="`border-color:${t.color}; box-shadow: 4px 4px 0 ${t.color};`">
-          <div class="display-font text-lg leading-tight" :style="`color:${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></div>
-          <div class="display-font text-3xl tabular-nums mt-1" x-text="t.score"></div>
-          <div class="text-[11px]" style="color:var(--navy-soft)">
-            <span x-text="Object.values(state?.players || {}).filter(p => p.team_id === t.id).length"></span> membri
+  <!-- ===== PHASE: turn_choice (capitano sta scegliendo) ===== -->
+  <section x-show="state?.phase === 'turn_choice'" class="flex-1 flex items-center justify-center" x-cloak>
+    <div class="text-center">
+      <div class="display-font text-3xl uppercase mb-4" style="color:var(--navy-soft)">⏳ In attesa scelta</div>
+      <div class="display-font" :style="`font-size:90px; color: ${askingTeam()?.color}; -webkit-text-stroke: 1.5px var(--navy);`"
+           x-text="askingTeam()?.name"></div>
+      <div class="text-2xl mt-4" style="color:var(--navy-soft)">
+        sta scegliendo la prossima domanda…
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PHASE: turn_question / turn_reveal (gioco vero) ===== -->
+  <template x-if="['turn_question','turn_reveal'].includes(state?.phase) && currentQuestion()">
+    <div class="flex-1 flex flex-col gap-4">
+
+      <!-- Leaderboard band -->
+      <section class="toon overflow-hidden">
+        <div class="grid" :style="`grid-template-columns: repeat(${Object.keys(state?.teams || {}).length}, minmax(0, 1fr));`">
+          <template x-for="(t, idx) in Object.values(state?.teams || {}).sort((a,b) => b.score - a.score)" :key="t.id">
+            <div class="team-cell"
+                 :class="t.id === currentRound()?.asking_team_id ? 'highlight-asking' : ((currentRound()?.target !== 'open' && t.id === currentRound()?.target) ? 'highlight-answering' : '')"
+                 style="border-left: 3px solid var(--navy);">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-baseline gap-2 min-w-0">
+                  <span class="display-font text-lg" :style="`color:${t.color}`" x-text="'#'+(idx+1)"></span>
+                  <span class="display-font text-xl truncate" :style="`color: ${t.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="t.name"></span>
+                </div>
+                <template x-if="t.id === currentRound()?.asking_team_id">
+                  <span class="display-font text-[11px] uppercase px-1.5 py-0.5 rounded toon-sm bg-white" style="border:2px solid var(--navy); box-shadow:2px 2px 0 var(--navy);">PONE</span>
+                </template>
+                <template x-if="currentRound()?.target !== 'open' && t.id === currentRound()?.target">
+                  <span class="display-font text-[11px] uppercase px-1.5 py-0.5 rounded toon-sm" style="background:var(--yellow); color:var(--navy); border:2px solid var(--navy); box-shadow:2px 2px 0 var(--navy);">RISP</span>
+                </template>
+              </div>
+              <div class="flex items-baseline gap-1.5">
+                <span class="display-font text-4xl tabular-nums leading-none"
+                      :class="(currentRound()?.points_delta?.[t.id] > 0) ? 'score-bump-up' : ((currentRound()?.points_delta?.[t.id] < 0) ? 'score-bump-down' : '')"
+                      x-text="t.score"></span>
+                <span class="text-xs" style="color:var(--navy-soft)">pt</span>
+                <template x-if="state?.phase === 'turn_reveal' && currentRound()?.points_delta?.[t.id]">
+                  <span class="display-font text-sm ml-1" :style="(currentRound().points_delta[t.id] > 0) ? 'color:var(--success)' : 'color:var(--coral)'"
+                        x-text="(currentRound().points_delta[t.id] > 0 ? '+' : '') + currentRound().points_delta[t.id]"></span>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <!-- Meta turno -->
+      <section class="toon p-3.5 flex items-center gap-5 flex-wrap">
+        <div class="flex items-center gap-2">
+          <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Pone</span>
+          <span class="display-font text-xl" :style="`color: ${askingTeam()?.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="askingTeam()?.name"></span>
+        </div>
+        <span class="w-1 h-7 rounded-full" style="background: var(--navy)"></span>
+        <div class="flex items-center gap-2">
+          <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Risponde</span>
+          <template x-if="currentRound()?.target === 'open'">
+            <span class="display-font text-xl" style="color:var(--teal-deep); -webkit-text-stroke: 0.5px var(--navy);">APERTA A TUTTI ⚡</span>
+          </template>
+          <template x-if="currentRound()?.target !== 'open' && state?.teams?.[currentRound()?.target]">
+            <span class="display-font text-xl" :style="`color: ${state.teams[currentRound().target].color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="state.teams[currentRound().target].name"></span>
+          </template>
+        </div>
+        <span class="w-1 h-7 rounded-full" style="background: var(--navy)"></span>
+        <div class="flex items-baseline gap-2">
+          <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">In palio</span>
+          <span class="toon-sm toon px-3 py-1 toon-yellow display-font text-2xl leading-none" x-text="currentRound()?.bet + ' pt'"></span>
+        </div>
+        <div class="ml-auto flex items-center gap-3">
+          <span class="mono text-xs px-2.5 py-1 rounded-md toon-sm toon" style="background:#fff;" x-text="currentQuestion()?.lecture + ' · ' + (currentQuestion()?.topic || '')"></span>
+          <span class="text-base">
+            <template x-for="i in 3" :key="i"><span :class="i <= (currentQuestion()?.difficulty || 0) ? 'text-[var(--yellow-deep)]' : 'text-[var(--cream-deep)]'">★</span></template>
+          </span>
+        </div>
+      </section>
+
+      <!-- Domanda dominante -->
+      <section class="flex-1 flex items-center min-h-0 px-2">
+        <div class="toon toon-lg w-full p-12">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="display-font text-xs uppercase tracking-widest px-2 py-1 toon toon-sm toon-coral" style="box-shadow: 3px 3px 0 var(--navy);">Domanda</span>
+            <span class="text-sm" style="color:var(--navy-soft)" x-text="'Lezione ' + currentQuestion()?.lecture?.replace('L','') + ' · ' + (currentQuestion()?.topic || '')"></span>
           </div>
+          <p class="display-font" style="font-size: clamp(58px, 5.5vw, 84px); line-height: 1.04; color: var(--navy);" x-text="currentQuestion()?.text"></p>
         </div>
-      </template>
+      </section>
+
+      <!-- Opzioni 2x2 -->
+      <section class="grid grid-cols-2 gap-3 px-1">
+        <template x-for="opt in currentQuestion()?.options || []" :key="opt.letter">
+          <div class="toon toon-sm flex items-center gap-4 px-5 py-3.5"
+               :class="state?.phase === 'turn_reveal' && (opt.letter === currentQuestion()?.correct ? 'reveal-correct' : 'reveal-wrong')">
+            <div class="opt-letter opt-letter-display" x-text="opt.letter"></div>
+            <div class="text-xl font-medium leading-snug flex-1" x-text="opt.text"></div>
+            <template x-if="state?.phase === 'turn_reveal' && opt.letter === currentQuestion()?.correct">
+              <span class="display-font text-sm flex items-center gap-1.5 px-2.5 py-1 toon toon-sm flex-shrink-0" style="background:var(--success); color:#fff; box-shadow: 3px 3px 0 var(--navy);">
+                ✓ OK!
+              </span>
+            </template>
+          </div>
+        </template>
+      </section>
+
+    </div>
+  </template>
+
+  <!-- ===== PHASE: finished (classifica) ===== -->
+  <section x-show="state?.phase === 'finished'" class="flex-1 flex items-center justify-center" x-cloak>
+    <div class="text-center">
+      <div class="display-font" style="font-size:120px; color:var(--coral); -webkit-text-stroke: 2px var(--navy);">
+        🏆 FINE!
+      </div>
+      <div class="mt-6 grid gap-3">
+        <template x-for="(t, idx) in Object.values(state?.teams || {}).sort((a,b) => b.score - a.score)" :key="t.id">
+          <div class="toon p-4 flex items-baseline justify-between gap-6 min-w-[600px]"
+               :class="idx === 0 && 'toon-yellow'">
+            <div class="flex items-baseline gap-3">
+              <span class="display-font text-4xl">#<span x-text="idx + 1"></span></span>
+              <span class="display-font text-3xl" :style="`color: ${t.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="t.name"></span>
+            </div>
+            <span class="display-font text-5xl tabular-nums" x-text="t.score + ' pt'"></span>
+          </div>
+        </template>
+      </div>
     </div>
   </section>
 
-  <!-- JSON viewer -->
-  <section class="toon p-4">
-    <div class="display-font text-sm uppercase mb-2" style="color:var(--navy-soft)">state/full · debug</div>
-    <pre class="json-pre" x-html="state ? jsonHL(state) : 'in attesa…'"></pre>
-  </section>
+  <!-- ===== FOOTER ===== -->
+  <footer class="flex items-center justify-between text-xs px-2 mt-2" style="color:var(--navy-soft)">
+    <span class="flex items-center gap-2">
+      <span class="pip pip-live"></span>
+      <span><span class="display-font text-base" style="color:var(--navy)" x-text="Object.keys(state?.players || {}).length"></span> giocatori connessi</span>
+    </span>
+    <span class="flex items-center gap-2">
+      <button @click="muted = !muted" class="btn-toon" style="font-size:11px; padding:4px 10px;" :title="muted ? 'Riattiva audio' : 'Silenzia audio'">
+        <span x-show="!muted">🔊</span><span x-show="muted">🔇</span>
+      </button>
+    </span>
+  </footer>
+
 </div>
 {% endblock %}

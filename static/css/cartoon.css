@@ -1,0 +1,217 @@
+/* =====================================================
+   IL RIPASSONE — Design system cartoon-pop / neobrutalism
+   Estratto dai mockup, condiviso da admin/team/display.
+   ===================================================== */
+
+:root {
+  --teal:        #4ABEC8;
+  --teal-deep:   #2A8893;
+  --coral:       #E84C3D;
+  --coral-deep:  #C13E32;
+  --yellow:      #F5C44A;
+  --yellow-deep: #D9A52F;
+  --cream:       #FBF1D9;
+  --cream-deep:  #F5E4C3;
+  --navy:        #1A2D40;
+  --navy-soft:   #2C4665;
+  --pink:        #F89A8E;
+  --green:       #4FB955;
+  --purple:      #9B6BD3;
+  --white:       #FFFFFF;
+  --success:     #2E9F39;
+  --danger:      #E84C3D;
+}
+
+[x-cloak] { display: none !important; }
+html, body { height: 100%; }
+
+body {
+  font-family: 'Fredoka', sans-serif;
+  color: var(--navy);
+  background: var(--cream);
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(74,190,200,0.18) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(232,76,61,0.12) 0%, transparent 45%),
+    radial-gradient(rgba(26,45,64,0.06) 1.4px, transparent 1.4px);
+  background-size: auto, auto, 18px 18px;
+  padding-top: env(safe-area-inset-top);
+}
+
+.display-font { font-family: 'Luckiest Guy', cursive; letter-spacing: 0.02em; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ===== Cartoon panel (neobrutalism) ===== */
+.toon {
+  background: #fff;
+  border: 3px solid var(--navy);
+  border-radius: 18px;
+  box-shadow: 5px 5px 0 var(--navy);
+}
+.toon-sm  { box-shadow: 3px 3px 0 var(--navy); border-radius: 12px; border-width: 2.5px; }
+.toon-lg  { box-shadow: 8px 8px 0 var(--navy); border-radius: 28px; }
+.toon-yellow { background: var(--yellow); }
+.toon-coral  { background: var(--coral); color: #fff; }
+.toon-teal   { background: var(--teal);  color: #fff; }
+.toon-cream  { background: var(--cream); }
+
+.title-outlined {
+  color: #fff;
+  -webkit-text-stroke: 2px var(--navy);
+  text-shadow: 3px 3px 0 var(--navy);
+}
+
+/* ===== Status pip ===== */
+.pip { width: 7px; height: 7px; border-radius: 99px; display: inline-block; border: 1.5px solid var(--navy); }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.pip-live { background: var(--green); animation: blink 1.6s ease-in-out infinite; }
+.pip-dead { background: #CCC; }
+
+/* ===== Buttons ===== */
+.btn-toon {
+  background: #fff; border: 3px solid var(--navy); border-radius: 12px;
+  padding: 10px 18px; box-shadow: 4px 4px 0 var(--navy);
+  transition: transform 0.12s, box-shadow 0.12s;
+  font-family: 'Luckiest Guy', cursive; color: var(--navy); cursor: pointer;
+}
+.btn-toon:hover  { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--navy); }
+.btn-toon.coral  { background: var(--coral); color: #fff; }
+.btn-toon.teal   { background: var(--teal);  color: #fff; }
+.btn-toon.green  { background: var(--green); color: #fff; }
+.btn-toon.yellow { background: var(--yellow); color: var(--navy); }
+.btn-toon:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: 4px 4px 0 var(--navy); }
+
+/* ===== Inputs ===== */
+.input-toon {
+  background: #fff; border: 2.5px solid var(--navy); border-radius: 10px;
+  padding: 8px 12px; font-size: 14px; box-shadow: 3px 3px 0 var(--navy);
+  color: var(--navy); width: 100%;
+}
+.input-toon:focus { outline: none; }
+
+/* ===== Countdown ring ===== */
+.ring-track    { stroke: var(--cream-deep); }
+.ring-progress {
+  stroke: var(--teal-deep);
+  transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  stroke-linecap: round;
+}
+.ring-progress.warn   { stroke: var(--yellow-deep); }
+.ring-progress.danger { stroke: var(--coral); animation: cd-pulse 0.7s ease-in-out infinite; }
+@keyframes cd-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* ===== Score / scoring animations ===== */
+@keyframes scoreUp {
+  0%   { transform: translateY(0) scale(1); color: var(--navy); }
+  35%  { transform: translateY(-8px) scale(1.2); color: var(--success); }
+  100% { transform: translateY(0) scale(1); color: var(--navy); }
+}
+@keyframes scoreDown {
+  0%   { transform: translateY(0) scale(1); color: var(--navy); }
+  35%  { transform: translateY(8px) scale(0.92); color: var(--coral); }
+  100% { transform: translateY(0) scale(1); color: var(--navy); }
+}
+.score-bump-up   { animation: scoreUp   1.4s ease-out; display: inline-block; }
+.score-bump-down { animation: scoreDown 1.4s ease-out; display: inline-block; }
+
+/* ===== Reveal opzione ===== */
+@keyframes wiggle {
+  0%,100% { transform: rotate(0); }
+  25% { transform: rotate(-1.5deg); }
+  75% { transform: rotate(1.5deg); }
+}
+.reveal-correct {
+  background: linear-gradient(180deg, #DEF7E1 0%, #C5F0CD 100%) !important;
+  border-color: var(--success) !important;
+  box-shadow: 6px 6px 0 var(--success);
+  animation: wiggle 0.8s ease-in-out;
+}
+.reveal-correct .opt-letter {
+  background: var(--success) !important; color: #fff !important;
+}
+.reveal-wrong { opacity: 0.45; }
+
+/* ===== Flash overlay full-screen (alarm) ===== */
+.flash-overlay {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 50;
+  background: var(--coral); opacity: 0;
+  transition: opacity 0.3s;
+}
+.flash-overlay.active { animation: flashPulse 0.6s ease-in-out infinite; }
+@keyframes flashPulse {
+  0%, 100% { opacity: 0; }
+  50%      { opacity: 0.22; }
+}
+
+/* ===== Audio gate ===== */
+.audio-gate {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(26, 45, 64, 0.92);
+  backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: center;
+}
+.audio-gate-card {
+  background: var(--cream);
+  border: 4px solid var(--navy);
+  border-radius: 28px;
+  box-shadow: 12px 12px 0 var(--coral);
+  padding: 56px 64px;
+  text-align: center;
+  transform: rotate(-1.5deg);
+}
+.gate-cta {
+  background: var(--coral); color: #fff;
+  border: 3px solid var(--navy); border-radius: 18px;
+  box-shadow: 6px 6px 0 var(--navy);
+  font-family: 'Luckiest Guy', cursive; font-size: 38px;
+  padding: 18px 44px; letter-spacing: 0.05em;
+  transition: transform 0.12s, box-shadow 0.12s;
+  cursor: pointer;
+}
+.gate-cta:hover { transform: translate(3px,3px); box-shadow: 3px 3px 0 var(--navy); background: var(--coral-deep); }
+
+/* ===== Sticky CTA per mobile ===== */
+.cta-sticky-wrap {
+  position: sticky; bottom: 0;
+  margin: 0 -14px;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(251,241,217,0) 0%, rgba(251,241,217,0.95) 30%, var(--cream) 100%);
+  z-index: 20;
+}
+
+/* ===== Opzioni risposta (display + team capitano) ===== */
+.opt-letter {
+  background: var(--cream-deep); color: var(--navy);
+  border: 2.5px solid var(--navy); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Luckiest Guy', cursive;
+  flex-shrink: 0;
+}
+
+/* ===== Member vote chip ===== */
+.vote-chip {
+  background: #fff; color: var(--navy);
+  border: 2px solid var(--navy); border-radius: 99px;
+  box-shadow: 2px 2px 0 var(--navy);
+  padding: 2px 9px; font-size: 11px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+
+/* ===== Team band cell highlight (display) ===== */
+.team-cell { padding: 14px 16px 12px; position: relative; }
+.team-cell.highlight-asking    { background: var(--yellow); }
+.team-cell.highlight-answering { background: var(--teal); color: #fff; }
+
+/* ===== Ribbon decorativo ===== */
+.ribbon-bar {
+  height: 14px;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--coral) 0 14px, var(--cream-deep) 14px 28px,
+    var(--teal) 28px 42px, var(--cream-deep) 42px 56px,
+    var(--yellow) 56px 70px, var(--cream-deep) 70px 84px
+  );
+  border-radius: 99px;
+  border: 3px solid var(--navy);
+  box-shadow: 4px 4px 0 var(--navy);
+}

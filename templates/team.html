@@ -1,86 +1,158 @@
 {% extends "base.html" %}
 {% block title %}Squadra · Il Ripassone{% endblock %}
+{% block head_extra %}
+<style>
+  /* opzione bottone (capitano risposta) */
+  .opt-btn {
+    background: #fff; border: 3px solid var(--navy); border-radius: 14px;
+    box-shadow: 4px 4px 0 var(--navy); width: 100%;
+    padding: 12px 14px; min-height: 64px;
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    transition: transform 0.12s, box-shadow 0.12s, background 0.18s;
+  }
+  .opt-btn:active   { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--navy); }
+  .opt-btn.selected { background: var(--yellow); }
+  .opt-btn .opt-letter { width: 48px; height: 48px; font-size: 26px; }
+  .opt-btn.selected .opt-letter { background: var(--coral); color: #fff; }
+
+  /* answer CTA */
+  .answer-cta {
+    width: 100%; background: var(--coral); color: #fff;
+    border: 3px solid var(--navy); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--navy);
+    font-family: 'Luckiest Guy', cursive; font-size: 26px;
+    padding: 16px 18px; letter-spacing: 0.04em; min-height: 60px;
+    transition: transform 0.12s, box-shadow 0.12s, background 0.18s;
+  }
+  .answer-cta:active:not(:disabled) {
+    background: var(--coral-deep);
+    transform: translate(2px,2px); box-shadow: 3px 3px 0 var(--navy);
+  }
+  .answer-cta:disabled { background: #DDD7C8; color: var(--navy-soft); cursor: not-allowed; box-shadow: 3px 3px 0 var(--navy); }
+  .answer-cta.submitted { background: var(--success); }
+
+  /* countdown grande sezione */
+  .cd-section { padding: 18px; border-radius: 22px; transition: all 0.3s; }
+  .cd-section.warn   { background: linear-gradient(135deg, #FFF7E0 0%, #FBF1D9 100%); }
+  .cd-section.danger {
+    background: linear-gradient(135deg, #FFE4E0 0%, #FFD0CB 100%);
+    border-color: var(--coral) !important;
+    box-shadow: 6px 6px 0 var(--coral) !important;
+    animation: cdShake 0.5s ease-in-out infinite;
+  }
+  @keyframes cdShake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-2px);} 75%{transform:translateX(2px);} }
+
+  /* chip filtro per scelta domanda */
+  .chip {
+    background: #fff; color: var(--navy);
+    border: 2.5px solid var(--navy); border-radius: 99px;
+    padding: 5px 12px; font-size: 13px; font-weight: 600;
+    box-shadow: 2px 2px 0 var(--navy);
+    transition: all 0.12s; white-space: nowrap;
+  }
+  .chip:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--navy); }
+  .chip.on    { background: var(--teal); color: #fff; }
+  .diff-dots { display: inline-flex; gap: 2px; }
+  .diff-dots span { width: 7px; height: 7px; border-radius: 99px; background: var(--cream-deep); border: 1px solid var(--navy); }
+  .diff-dots span.on { background: var(--yellow-deep); }
+
+  /* slider puntata */
+  .bet-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 16px;
+    border: 2.5px solid var(--navy); border-radius: 99px;
+    background: linear-gradient(90deg, var(--yellow) 0%, var(--coral) 100%);
+    outline: none; cursor: pointer; box-shadow: 2px 2px 0 var(--navy);
+  }
+  .bet-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 30px; height: 30px; background: #fff; border: 3px solid var(--navy);
+    border-radius: 50%; cursor: grab; box-shadow: 2px 2px 0 var(--navy); margin-top: -1px;
+  }
+  .bet-slider::-moz-range-thumb {
+    width: 30px; height: 30px; background: #fff; border: 3px solid var(--navy);
+    border-radius: 50%; cursor: grab; box-shadow: 2px 2px 0 var(--navy);
+  }
+
+  /* target pill */
+  .target-pill {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 2.5px solid var(--navy); border-radius: 14px;
+    padding: 10px 12px; box-shadow: 3px 3px 0 var(--navy);
+    transition: all 0.12s; width: 100%; min-height: 56px; text-align: left;
+  }
+  .target-pill:active { transform: translate(1px,1px); box-shadow: 2px 2px 0 var(--navy); }
+  .target-pill.on { color: #fff; }
+  .target-radio {
+    width: 22px; height: 22px; border: 2.5px solid var(--navy); border-radius: 50%;
+    background: var(--cream-deep); flex-shrink: 0; position: relative;
+  }
+  .target-pill.on .target-radio { background: var(--coral); }
+  .target-pill.on .target-radio::after {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 8px; height: 8px; border-radius: 50%; background: #fff;
+  }
+
+  @keyframes nudge { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+  .nudge { animation: nudge 0.8s ease-in-out infinite; transform-origin: center; }
+</style>
+{% endblock %}
+
 {% block body %}
-<div class="min-h-screen flex flex-col p-4 gap-3 max-w-md mx-auto w-full">
+<div class="min-h-screen w-full max-w-md mx-auto px-3.5 pt-3 pb-2 flex flex-col gap-3">
+
+  <!-- ===== HEADER mini logo ===== -->
   <header class="flex items-center justify-between">
-    <div class="toon toon-yellow toon-sm px-3 py-1.5 -rotate-1">
+    <div class="toon toon-sm toon-yellow px-3 py-1.5 -rotate-1">
       <h1 class="display-font text-lg title-outlined leading-none">IL RIPASSONE!</h1>
     </div>
-    <span class="display-font text-[11px] uppercase" style="color:var(--navy-soft)">🎮 Squadra</span>
+    <span class="display-font text-[11px] uppercase" style="color:var(--navy-soft)">▸ Squadra</span>
   </header>
 
-  <!-- Form join (visibile solo se non ancora joinati) -->
-  <section class="toon p-4" x-show="!me" x-data="{ f:'', l:'', t:'' }">
+  <!-- ===== FORM JOIN (no me, in lobby/setup) ===== -->
+  <section x-show="!me && ['setup','lobby'].includes(state?.phase)" class="toon p-4" x-data="{ f:'', l:'', t:'' }">
     <div class="display-font text-base mb-3">Iscriviti al quiz</div>
     <form @submit.prevent="send('team/join', { first_name: f, last_name: l, team_name: t })" class="flex flex-col gap-2">
       <input class="input-toon" placeholder="Nome" x-model="f" required>
       <input class="input-toon" placeholder="Cognome" x-model="l" required>
       <input class="input-toon" placeholder="Nome squadra" x-model="t" required>
-      <button class="btn-toon coral mt-1" type="submit"
-              :disabled="state?.phase !== 'setup' && state?.phase !== 'lobby'">
-        Entra
-      </button>
-      <span class="text-[11px]" x-show="state?.phase !== 'setup' && state?.phase !== 'lobby'" style="color:var(--coral)">
-        L'iscrizione e chiusa (fase: <span x-text="state?.phase"></span>)
-      </span>
+      <button class="btn-toon coral mt-1" type="submit">Entra</button>
+      <p class="text-[11px] mt-1" style="color:var(--navy-soft)">Se la squadra esiste gia, ti aggiungerai come membro. Se la crei tu, sei il capitano.</p>
     </form>
   </section>
 
-  <!-- Stato joinato -->
-  <section class="toon p-4" x-show="me" x-cloak>
-    <div class="display-font text-sm uppercase mb-1" style="color:var(--navy-soft)">Sei iscritto come</div>
-    <div class="display-font text-xl" x-text="me?.first_name + ' ' + me?.last_name"></div>
-    <div class="text-sm mt-1" style="color:var(--navy-soft)">
-      squadra:
-      <span class="display-font text-base"
-            :style="`color: ${state?.teams?.[me?.team_id]?.color || 'var(--navy)'}; -webkit-text-stroke: 0.4px var(--navy);`"
-            x-text="state?.teams?.[me?.team_id]?.name"></span>
-      ·
-      <span class="display-font text-base" x-text="state?.teams?.[me?.team_id]?.score + ' pt'"></span>
-    </div>
-    <div class="text-xs mt-1" x-show="state?.teams?.[me?.team_id]?.captain_id === me?.id" style="color:var(--coral)">
-      ★ Sei il capitano
-    </div>
-    <button class="btn-toon mt-3" style="font-size: 12px; padding: 6px 10px;" @click="forgetMe()">forget me (debug)</button>
+  <!-- ===== Iscrizione chiusa ===== -->
+  <section x-show="!me && !['setup','lobby'].includes(state?.phase)" class="toon p-4" x-cloak>
+    <div class="display-font text-lg" style="color:var(--coral)">⛔ Iscrizione chiusa</div>
+    <p class="text-sm mt-1" style="color:var(--navy-soft)">Il quiz e gia in corso (fase: <span x-text="state?.phase"></span>). Chiedi all-admin di reset se serve riaprire.</p>
   </section>
 
-  <!-- Pannello di gioco (visibile solo se joinati) -->
-  <section class="toon p-4" x-show="me && state?.phase === 'turn_question'" x-cloak>
-    <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">
-      <template x-if="state?.teams?.[me?.team_id]?.captain_id === me?.id">
-        <span style="color:var(--coral)">★ Sei il CAPITANO — rispondi:</span>
-      </template>
-      <template x-if="state?.teams?.[me?.team_id]?.captain_id !== me?.id">
-        <span>Vota (suggerisci al capitano):</span>
-      </template>
-    </div>
-    <div class="grid grid-cols-2 gap-2">
-      <template x-for="L in ['A','B','C','D']" :key="L">
-        <button class="btn-toon"
-                @click="(() => {
-                  const isCap = state.teams[me.team_id].captain_id === me.id;
-                  if (isCap) send('captain/answer', { captain_id: me.id, option: L });
-                  else       send('team/vote',      { player_id: me.id,  option: L });
-                })()"
-                x-text="L"></button>
-      </template>
-    </div>
-    <!-- mostra al capitano i voti dei compagni in tempo reale -->
-    <template x-if="state?.teams?.[me?.team_id]?.captain_id === me?.id">
-      <div class="text-xs mt-3" style="color:var(--navy-soft)">
-        Voti dei compagni:
-        <template x-for="[pid, opt] in Object.entries(state?.rounds?.at(-1)?.member_votes || {})" :key="pid">
-          <span class="mono mx-1">
-            <span x-text="state?.players?.[pid]?.first_name || pid"></span>:<b x-text="opt"></b>
-          </span>
-        </template>
-        <span x-show="!Object.keys(state?.rounds?.at(-1)?.member_votes || {}).length" style="color:var(--navy-soft)">nessun voto</span>
+  <!-- ===== HEADER squadra (me presente) ===== -->
+  <section x-show="me" class="toon p-3 flex items-center justify-between" x-cloak
+           :class="state?.phase === 'turn_question' && countdown !== null && countdown <= 5 && 'cd-section danger'">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center display-font text-xl flex-shrink-0"
+           :style="myTeam() ? `background: ${myTeam().color}; color:#fff; border:2.5px solid var(--navy); box-shadow:3px 3px 0 var(--navy);` : ''">
+        <span x-text="myTeam()?.name?.[0]"></span>
       </div>
-    </template>
+      <div class="min-w-0">
+        <div class="display-font text-lg leading-tight truncate"
+             :style="myTeam() ? `color: ${myTeam().color}; -webkit-text-stroke: 0.5px var(--navy);` : ''" x-text="myTeam()?.name"></div>
+        <div class="text-xs leading-tight" style="color:var(--navy-soft)">
+          <span class="font-semibold" style="color:var(--navy)" x-text="me?.first_name + ' ' + me?.last_name"></span>
+          <template x-if="isCaptainOf(me?.team_id)"><span style="color:var(--coral)" class="ml-1 font-bold">★ capitano</span></template>
+        </div>
+      </div>
+    </div>
+    <div class="text-right pl-2">
+      <div class="display-font text-[10px] uppercase leading-none" style="color:var(--navy-soft)">Punti</div>
+      <div class="display-font text-2xl leading-none mt-0.5" x-text="myTeam()?.score"></div>
+    </div>
   </section>
 
-  <!-- Squadre live -->
-  <section class="toon p-3">
+  <!-- ===== LOBBY (me iscritto, in attesa start) ===== -->
+  <section x-show="me && state?.phase === 'lobby'" class="toon p-3" x-cloak>
     <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">Squadre in lobby</div>
     <div class="flex flex-col gap-1.5">
       <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
@@ -92,17 +164,281 @@
           </span>
         </div>
       </template>
-      <template x-if="!Object.keys(state?.teams || {}).length">
-        <div class="text-xs" style="color:var(--navy-soft)">Nessuna squadra ancora.</div>
+    </div>
+    <p class="text-xs mt-3" style="color:var(--navy-soft)">In attesa che l-admin avvii il quiz…</p>
+  </section>
+
+  <!-- ===== TURN_CHOICE: capitano della squadra di turno ===== -->
+  <section x-show="me && state?.phase === 'turn_choice' && currentRound()?.asking_team_id === me?.team_id && isCaptainOf(me?.team_id)" x-cloak class="contents">
+
+    <div class="toon toon-coral p-3 nudge text-center">
+      <div class="display-font text-2xl leading-none" style="-webkit-text-stroke: 0.5px var(--navy);">⚡ TOCCA A TE!</div>
+      <div class="text-sm mt-1.5" style="color:#fff;">Scegli una domanda, fissa la puntata e decidi a chi rivolgerla.</div>
+    </div>
+
+    <!-- Filtri pool -->
+    <div class="toon p-3 flex flex-col gap-2.5">
+      <div class="flex items-center justify-between">
+        <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Cerca nel pool</span>
+        <span class="text-[11px]" style="color:var(--navy-soft)">
+          <span class="display-font text-base" style="color:var(--navy)" x-text="filteredQuestions().length"></span> /
+          <span x-text="Object.keys(state?.questions_pool || {}).length - (state?.used_question_ids?.length || 0)"></span> disponibili
+        </span>
+      </div>
+      <input type="search" x-model="filterQ" placeholder="🔍 cerca per parola chiave..." class="input-toon">
+      <div>
+        <div class="display-font text-[10px] uppercase mb-1" style="color:var(--navy-soft)">Lezione</div>
+        <div class="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+          <template x-for="l in availableLectures()" :key="l">
+            <button type="button" class="chip" :class="filterLectures.includes(l) && 'on'" @click="toggleLecture(l)" x-text="l"></button>
+          </template>
+        </div>
+      </div>
+      <div>
+        <div class="display-font text-[10px] uppercase mb-1" style="color:var(--navy-soft)">Difficolta</div>
+        <div class="flex gap-1.5">
+          <template x-for="d in [1,2,3]" :key="d">
+            <button type="button" class="chip flex items-center gap-1.5"
+                    :class="filterDiff.includes(d) && 'on'"
+                    :style="filterDiff.includes(d) ? (d === 1 ? 'background:var(--green); color:#fff;' : (d === 2 ? 'background:var(--yellow); color:var(--navy);' : 'background:var(--coral); color:#fff;')) : ''"
+                    @click="toggleDiff(d)">
+              <span class="diff-dots">
+                <span class="on"></span>
+                <span :class="d >= 2 && 'on'"></span>
+                <span :class="d >= 3 && 'on'"></span>
+              </span>
+              <span x-text="d === 1 ? 'Facile' : (d === 2 ? 'Media' : 'Tosta')"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista domande filtrate -->
+    <div class="flex flex-col gap-2">
+      <template x-for="q in filteredQuestions()" :key="q.id">
+        <button type="button" @click="selectedQuestionId = q.id"
+                class="toon-sm toon p-3 text-left transition-all"
+                :class="selectedQuestionId === q.id && 'toon-yellow'"
+                :style="selectedQuestionId === q.id ? 'border-color:var(--coral); box-shadow: 4px 4px 0 var(--coral);' : ''">
+          <div class="flex items-start justify-between gap-2 mb-1.5">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="mono text-[11px] px-1.5 py-0.5 rounded toon toon-sm" style="background:#fff;" x-text="q.lecture"></span>
+              <span class="diff-dots">
+                <span class="on"></span>
+                <span :class="q.difficulty >= 2 && 'on'"></span>
+                <span :class="q.difficulty >= 3 && 'on'"></span>
+              </span>
+              <span class="text-[10px] uppercase tracking-wider font-semibold" style="color:var(--navy-soft)" x-text="q.topic"></span>
+            </div>
+            <template x-if="selectedQuestionId === q.id">
+              <span class="display-font text-[11px] px-2 py-0.5 rounded toon toon-sm flex-shrink-0" style="background:var(--coral); color:#fff; box-shadow:2px 2px 0 var(--navy);">SCELTA ✓</span>
+            </template>
+          </div>
+          <div class="text-[14px] font-medium leading-snug" x-text="q.text"></div>
+        </button>
+      </template>
+      <template x-if="!filteredQuestions().length">
+        <div class="text-center text-sm py-4" style="color:var(--navy-soft)">
+          Nessuna domanda corrisponde ai filtri.
+        </div>
+      </template>
+    </div>
+
+    <!-- Posta la domanda: bet + target -->
+    <div class="toon p-3 flex flex-col gap-3" :class="!selectedQuestionId && 'opacity-60 pointer-events-none'">
+      <div class="display-font text-sm uppercase" style="color:var(--navy-soft)">⚙ Posta la domanda</div>
+
+      <div>
+        <div class="flex items-baseline justify-between mb-1.5">
+          <span class="display-font text-[11px] uppercase" style="color:var(--navy-soft)">Puntata</span>
+          <span class="flex items-baseline gap-1">
+            <span class="display-font text-2xl leading-none" x-text="bet"></span>
+            <span class="text-xs" style="color:var(--navy-soft)">/ <span x-text="myTeam()?.score"></span> pt disponibili</span>
+          </span>
+        </div>
+        <input type="range" :min="state?.settings?.min_bet || 5"
+                            :max="Math.min(state?.settings?.max_bet || 50, myTeam()?.score || 50)"
+                            step="1" x-model.number="bet" class="bet-slider">
+        <div class="flex justify-between text-[10px] mt-1" style="color:var(--navy-soft)">
+          <span>min <span x-text="state?.settings?.min_bet"></span></span>
+          <span>max <span x-text="Math.min(state?.settings?.max_bet || 50, myTeam()?.score || 50)"></span></span>
+        </div>
+      </div>
+
+      <div>
+        <div class="display-font text-[11px] uppercase mb-1.5" style="color:var(--navy-soft)">Rivolta a</div>
+        <div class="flex flex-col gap-2">
+          <button type="button" class="target-pill" :class="target === 'open' && 'on'"
+                  :style="target === 'open' ? 'background: linear-gradient(135deg, var(--teal) 0%, var(--teal-deep) 100%);' : ''"
+                  @click="target = 'open'">
+            <span class="target-radio"></span>
+            <span class="display-font text-base leading-none">⚡ APERTA A TUTTI</span>
+            <span class="ml-auto text-[11px]" :class="target === 'open' && 'opacity-90'">primo blocca</span>
+          </button>
+          <template x-for="opp in opponents()" :key="opp.id">
+            <button type="button" class="target-pill" :class="target === opp.id && 'on'"
+                    :style="target === opp.id ? `background: ${opp.color};` : ''"
+                    @click="target = opp.id">
+              <span class="target-radio"></span>
+              <span class="display-font text-base leading-none"
+                    :style="target === opp.id ? '' : `color: ${opp.color}; -webkit-text-stroke: 0.4px var(--navy);`"
+                    x-text="opp.name"></span>
+              <span class="ml-auto text-[11px]" :class="target === opp.id ? 'opacity-90' : ''"
+                    :style="target === opp.id ? '' : 'color:var(--navy-soft)'" x-text="opp.score + ' pt'"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-sticky-wrap mt-auto">
+      <button class="answer-cta" :disabled="!canConfirmChoice()" @click="confirmChoice()">
+        <template x-if="!selectedQuestionId"><span>SCEGLI UNA DOMANDA</span></template>
+        <template x-if="selectedQuestionId && !target"><span>SCEGLI A CHI RIVOLGERLA</span></template>
+        <template x-if="selectedQuestionId && target"><span>LANCIA · <span x-text="bet"></span> pt</span></template>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== TURN_CHOICE: NON il capitano di turno ===== -->
+  <section x-show="me && state?.phase === 'turn_choice' && !(currentRound()?.asking_team_id === me?.team_id && isCaptainOf(me?.team_id))" class="toon p-5 text-center" x-cloak>
+    <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">In attesa</div>
+    <div class="display-font text-xl" :style="`color:${askingTeam()?.color}; -webkit-text-stroke:0.5px var(--navy);`" x-text="askingTeam()?.name"></div>
+    <div class="text-sm mt-1" style="color:var(--navy-soft)">sta scegliendo la domanda…</div>
+  </section>
+
+  <!-- ===== TURN_QUESTION: panel di gioco ===== -->
+  <section x-show="me && state?.phase === 'turn_question' && currentQuestion()" class="toon p-4 flex flex-col gap-3" x-cloak>
+    <!-- Countdown -->
+    <div class="cd-section toon flex items-center gap-4"
+         :class="countdown !== null && countdown <= 5 ? 'danger' : (countdown !== null && countdown <= 10 ? 'warn' : '')">
+      <div class="relative w-[110px] h-[110px] flex-shrink-0">
+        <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100" x-show="currentRound()?.seconds_total">
+          <circle cx="50" cy="50" r="44" stroke-width="9" fill="none" class="ring-track"/>
+          <circle cx="50" cy="50" r="44" stroke-width="10" fill="none"
+                  class="ring-progress" :class="countdown <= 5 ? 'danger' : (countdown <= 10 ? 'warn' : '')"
+                  stroke-dasharray="276.46" :stroke-dashoffset="276.46 * (1 - countdown/(currentRound()?.seconds_total || 30))"/>
+        </svg>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="display-font tabular-nums" style="font-size:54px;"
+                :style="countdown !== null && countdown <= 5 ? 'color:var(--coral); font-size:54px;' : (countdown !== null && countdown <= 10 ? 'color:var(--yellow-deep); font-size:54px;' : 'color:var(--navy); font-size:54px;')"
+                x-text="countdown !== null ? countdown : '—'"></span>
+        </div>
+      </div>
+      <div class="flex-1">
+        <template x-if="currentRound()?.target === 'open'">
+          <div>
+            <div class="display-font text-base" style="color:var(--teal-deep); -webkit-text-stroke: 0.5px var(--navy);">APERTA A TUTTI ⚡</div>
+            <div class="text-[11px] mt-1" style="color:var(--navy-soft)">primo che risponde, blocca le altre</div>
+          </div>
+        </template>
+        <template x-if="currentRound()?.target !== 'open' && currentRound()?.target === me?.team_id">
+          <div>
+            <div class="display-font text-base" style="color:var(--coral); -webkit-text-stroke: 0.5px var(--navy);">A TE!</div>
+            <div class="text-[11px] mt-1" style="color:var(--navy-soft)">domanda diretta alla tua squadra</div>
+          </div>
+        </template>
+        <template x-if="currentRound()?.target !== 'open' && currentRound()?.target !== me?.team_id">
+          <div>
+            <div class="display-font text-base" style="-webkit-text-stroke: 0.5px var(--navy); color:var(--navy-soft)">NON A TE</div>
+            <div class="text-[11px] mt-1" style="color:var(--navy-soft)">la domanda e per un'altra squadra</div>
+          </div>
+        </template>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="display-font text-[10px] uppercase" style="color:var(--navy-soft)">In palio</span>
+          <span class="toon-sm toon px-2 py-0.5 toon-yellow display-font text-base leading-none" x-text="currentRound()?.bet + ' pt'"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Domanda -->
+    <div class="toon-sm toon p-4">
+      <div class="display-font text-[10px] uppercase mb-2 px-2 py-0.5 inline-block toon toon-sm toon-coral" style="box-shadow: 2px 2px 0 var(--navy);">DOMANDA</div>
+      <p class="display-font leading-tight" style="font-size:22px; color: var(--navy);" x-text="currentQuestion()?.text"></p>
+    </div>
+
+    <!-- Opzioni: capitano risponde, membro vota -->
+    <div class="grid grid-cols-1 gap-2.5" x-show="canAnswerOrVote()">
+      <template x-for="opt in currentQuestion()?.options || []" :key="opt.letter">
+        <button type="button" class="opt-btn"
+                :class="myChoice === opt.letter && 'selected'"
+                @click="onPick(opt.letter)">
+          <div class="opt-letter" x-text="opt.letter"></div>
+          <div class="flex-1">
+            <div class="text-[15px] font-medium leading-snug" x-text="opt.text"></div>
+            <!-- voti compagni (visibili solo al capitano) -->
+            <div class="flex flex-wrap gap-1.5 mt-1.5" x-show="isCaptainOf(me?.team_id) && votesFor(opt.letter).length">
+              <template x-for="[pid, _] in votesFor(opt.letter)" :key="pid">
+                <span class="vote-chip">
+                  <span class="w-1.5 h-1.5 rounded-full" style="background:var(--green)"></span>
+                  <span x-text="state?.players?.[pid]?.first_name || '?'"></span>
+                </span>
+              </template>
+            </div>
+          </div>
+          <template x-if="isCaptainOf(me?.team_id) && votesFor(opt.letter).length">
+            <span class="display-font text-lg flex-shrink-0" style="color:var(--success); -webkit-text-stroke: 0.4px var(--navy);" x-text="votesFor(opt.letter).length"></span>
+          </template>
+        </button>
+      </template>
+    </div>
+
+    <!-- CTA capitano -->
+    <div class="cta-sticky-wrap" x-show="isCaptainOf(me?.team_id) && canAnswer()">
+      <button class="answer-cta" :class="answerSubmitted && 'submitted'"
+              :disabled="!myChoice || answerSubmitted" @click="submitAnswer()">
+        <span x-show="!answerSubmitted">RISPONDI · <span x-text="myChoice || '—'"></span></span>
+        <span x-show="answerSubmitted">✓ INVIATA · ATTENDI…</span>
+      </button>
+    </div>
+
+    <!-- info per chi non puo rispondere/votare -->
+    <div class="toon-sm toon p-3 text-center text-sm" style="color:var(--navy-soft)" x-show="!canAnswerOrVote()">
+      <template x-if="currentRound()?.asking_team_id === me?.team_id">
+        <span>La tua squadra ha posto questa domanda. Aspetta la risposta avversaria.</span>
+      </template>
+      <template x-if="currentRound()?.asking_team_id !== me?.team_id && !canAnswerOrVote()">
+        <span>La domanda non e indirizzata alla tua squadra. Aspetta…</span>
       </template>
     </div>
   </section>
 
-  <!-- JSON viewer compatto -->
-  <section class="toon p-3">
-    <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">state · debug</div>
-    <pre class="json-pre" style="font-size: 10.5px;" x-html="state ? jsonHL({phase: state.phase, teams: Object.keys(state.teams||{}).length, players: Object.keys(state.players||{}).length, round: state.rounds?.length}) : '…'"></pre>
+  <!-- ===== TURN_REVEAL ===== -->
+  <section x-show="me && state?.phase === 'turn_reveal' && currentQuestion()" class="toon p-4 flex flex-col gap-3" x-cloak>
+    <div class="text-center">
+      <div class="display-font text-base uppercase mb-1" style="color:var(--navy-soft)">Risposta corretta</div>
+      <div class="display-font" style="font-size:64px; color:var(--success); -webkit-text-stroke: 1px var(--navy);" x-text="currentQuestion()?.correct"></div>
+    </div>
+    <div class="toon-sm toon p-3" style="background: var(--cream-deep);">
+      <div class="text-sm font-medium" x-text="currentQuestion()?.options.find(o => o.letter === currentQuestion()?.correct)?.text"></div>
+    </div>
+    <!-- esito per la mia squadra -->
+    <div class="toon-sm toon p-3 text-center" :style="(currentRound()?.points_delta?.[me?.team_id] || 0) >= 0 ? 'background:#DEF7E1; border-color:var(--success);' : 'background:#FFE4E0; border-color:var(--coral);'">
+      <span class="display-font text-2xl" :style="(currentRound()?.points_delta?.[me?.team_id] || 0) >= 0 ? 'color:var(--success)' : 'color:var(--coral)'"
+            x-text="((currentRound()?.points_delta?.[me?.team_id] || 0) > 0 ? '+' : '') + (currentRound()?.points_delta?.[me?.team_id] || 0) + ' pt'"></span>
+    </div>
   </section>
+
+  <!-- ===== FINISHED ===== -->
+  <section x-show="me && state?.phase === 'finished'" class="toon p-5 text-center" x-cloak>
+    <div class="display-font text-3xl mb-3" style="color:var(--coral)">🏆 FINE!</div>
+    <div class="grid gap-2">
+      <template x-for="(t, idx) in Object.values(state?.teams || {}).sort((a,b) => b.score - a.score)" :key="t.id">
+        <div class="toon-sm toon p-3 flex justify-between" :class="idx === 0 && 'toon-yellow'">
+          <span class="display-font text-base">#<span x-text="idx + 1"></span> <span :style="`color:${t.color}; -webkit-text-stroke: 0.3px var(--navy);`" x-text="t.name"></span></span>
+          <span class="display-font text-xl" x-text="t.score + ' pt'"></span>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- footer debug minimale -->
+  <div class="text-xs flex items-center justify-between px-1 mt-2" style="color:var(--navy-soft)" x-show="me" x-cloak>
+    <button class="underline" @click="forgetMe()">esci dal quiz</button>
+    <span><span class="pip pip-live"></span> live</span>
+  </div>
+
 </div>
 
 {% endblock %}

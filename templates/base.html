@@ -5,122 +5,133 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FBF1D9">
 <title>{% block title %}Il Ripassone{% endblock %}</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/cartoon.css">
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<style>
-  :root {
-    --teal: #4ABEC8; --teal-deep: #2A8893;
-    --coral: #E84C3D; --coral-deep: #C13E32;
-    --yellow: #F5C44A; --yellow-deep: #D9A52F;
-    --cream: #FBF1D9; --cream-deep: #F5E4C3;
-    --navy: #1A2D40; --navy-soft: #2C4665;
-    --green: #4FB955; --success: #2E9F39; --danger: #E84C3D;
-  }
-  [x-cloak] { display: none !important; }
-  html, body { height: 100%; }
-  body {
-    font-family: 'Fredoka', sans-serif;
-    color: var(--navy);
-    background: var(--cream);
-    background-image:
-      radial-gradient(circle at 0% 0%, rgba(74,190,200,0.18) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(232,76,61,0.12) 0%, transparent 45%),
-      radial-gradient(rgba(26,45,64,0.06) 1.4px, transparent 1.4px);
-    background-size: auto, auto, 18px 18px;
-  }
-  .display-font { font-family: 'Luckiest Guy', cursive; letter-spacing: 0.02em; }
-  .mono { font-family: 'JetBrains Mono', monospace; }
-  .toon { background: #fff; border: 3px solid var(--navy); border-radius: 18px; box-shadow: 5px 5px 0 var(--navy); }
-  .toon-sm { box-shadow: 3px 3px 0 var(--navy); border-radius: 12px; border-width: 2.5px; }
-  .toon-yellow { background: var(--yellow); }
-  .toon-coral { background: var(--coral); color: #fff; }
-  .toon-teal { background: var(--teal); color: #fff; }
-  .title-outlined { color: #fff; -webkit-text-stroke: 2px var(--navy); text-shadow: 3px 3px 0 var(--navy); }
-  .pip { width: 7px; height: 7px; border-radius: 99px; display: inline-block; border: 1.5px solid var(--navy); }
-  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-  .pip-live { background: var(--green); animation: blink 1.6s ease-in-out infinite; }
-  .pip-dead { background: #CCC; }
-  .btn-toon {
-    background: #fff; border: 3px solid var(--navy); border-radius: 12px;
-    padding: 10px 18px; box-shadow: 4px 4px 0 var(--navy);
-    transition: transform 0.12s, box-shadow 0.12s;
-    font-family: 'Luckiest Guy', cursive; color: var(--navy); cursor: pointer;
-  }
-  .btn-toon:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--navy); }
-  .btn-toon.coral { background: var(--coral); color: #fff; }
-  .btn-toon.teal { background: var(--teal); color: #fff; }
-  .btn-toon.green { background: var(--green); color: #fff; }
-  .btn-toon:disabled { opacity: 0.4; cursor: not-allowed; }
-  .input-toon {
-    background: #fff; border: 2.5px solid var(--navy); border-radius: 10px;
-    padding: 8px 12px; font-size: 14px; box-shadow: 3px 3px 0 var(--navy);
-    color: var(--navy); width: 100%;
-  }
-  .json-pre {
-    background: #0F172A; color: #F5C44A;
-    padding: 12px; border-radius: 12px;
-    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
-    overflow: auto; max-height: 60vh;
-    border: 2.5px solid var(--navy); box-shadow: 3px 3px 0 var(--navy);
-  }
-  .json-pre .k { color: #4ABEC8; }
-  .json-pre .s { color: #4FB955; }
-  .json-pre .n { color: #F89A8E; }
-  .json-pre .b { color: #F5C44A; font-weight: 700; }
-</style>
 {% block head_extra %}{% endblock %}
 </head>
 <body x-data='ripassoneClient({{ role|tojson }})' x-init='connect()'>
 
 {% block body %}{% endblock %}
 
-<!-- Status WS sempre visibile in basso a destra -->
+<!-- Status WS sempre visibile in basso a destra (debug bar minimale) -->
 <div class="fixed bottom-3 right-3 z-50 toon-sm toon px-3 py-1.5 flex items-center gap-2"
-     style="background: rgba(255,255,255,0.96);">
+     style="background: rgba(255,255,255,0.96); font-size: 11px;">
   <span class="pip" :class="connected ? 'pip-live' : 'pip-dead'"></span>
   <span class="display-font text-xs uppercase">WS · <span x-text="role"></span></span>
-  <span class="text-[11px]" style="color:var(--navy-soft)">phase: <b style="color:var(--navy)" x-text="state?.phase"></b></span>
+  <span style="color:var(--navy-soft)">phase: <b style="color:var(--navy)" x-text="state?.phase"></b></span>
   <template x-if="state?.phase === 'turn_question' && countdown !== null">
-    <span class="display-font text-base px-2 py-0.5 rounded toon-sm" :style="countdown <= 5 ? 'background:var(--coral); color:#fff;' : (countdown <= 10 ? 'background:var(--yellow); color:var(--navy);' : 'background:var(--teal); color:#fff;')">
-      ⏱ <span x-text="countdown"></span>s
+    <span class="display-font text-xs px-1.5 py-0.5 rounded toon-sm" :style="countdown <= 5 ? 'background:var(--coral); color:#fff;' : (countdown <= 10 ? 'background:var(--yellow); color:var(--navy);' : 'background:var(--teal); color:#fff;')">
+      ⏱<span x-text="countdown"></span>
     </span>
   </template>
   <template x-if="lastError">
-    <span class="text-[11px]" style="color:var(--coral); font-weight:600;" x-text="'⚠ ' + lastError"></span>
+    <span style="color:var(--coral); font-weight:600;" x-text="'⚠ ' + lastError"></span>
   </template>
 </div>
 
 <script>
+/* ============================================================
+   AUDIO procedurale (Web Audio API).
+   Suoni generati al volo, niente file. Va sbloccato da una
+   user-gesture (autoplay policy). Uso da Alpine come this.audio.
+   ============================================================ */
+const RipassoneAudio = {
+  ctx: null, enabled: false,
+  enable() {
+    if (this.enabled) return;
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    this.enabled = true;
+  },
+  tone(freq, duration, type = 'sine', volume = 0.18, attack = 0.005) {
+    if (!this.enabled || !this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.frequency.value = freq; osc.type = type;
+    const t0 = this.ctx.currentTime;
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(volume, t0 + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(gain).connect(this.ctx.destination);
+    osc.start(t0); osc.stop(t0 + duration + 0.05);
+  },
+  tick()   { this.tone(1200, 0.06, 'square', 0.10); },
+  warn()   { this.tone(1500, 0.10, 'square', 0.16); },
+  timeUp() {
+    this.tone(220, 0.5, 'sawtooth', 0.22);
+    setTimeout(() => this.tone(150, 0.7, 'sawtooth', 0.22), 280);
+  },
+  ding()   {
+    [523.25, 659.25, 783.99].forEach((f, i) => {
+      setTimeout(() => this.tone(f, 0.7, 'sine', 0.18), i * 60);
+    });
+  },
+  buzzer() { this.tone(110, 0.6, 'sawtooth', 0.25); },
+};
+
+/* ============================================================
+   ripassoneClient: stato Alpine condiviso da tutti i template.
+   Si connette al WS, mantiene state/countdown/me, espone send().
+   ============================================================ */
 function ripassoneClient(role) {
   return {
     role,
-    ws: null,
-    connected: false,
-    state: null,           // ultimo state/full ricevuto
-    lastError: null,
-    countdown: null,       // seconds_left ricevuto via countdown/tick (real-time)
-    /* eventi non-state ricevuti, utili al singolo template */
-    events: [],
-    /* memoria per il client (sopravvive ai refresh) */
+    ws: null, connected: false,
+    state: null, lastError: null,
+    countdown: null,
+    audioReady: false, muted: false,
+    prevPhase: null,
     me: JSON.parse(localStorage.getItem('ripassone.me') || 'null'),
+
+    /* stato locale per le viste team (capitano sceglie / risponde) */
+    selectedQuestionId: null,
+    bet: null,
+    target: null,
+    filterQ: '', filterLectures: [], filterDiff: [],
+    myChoice: null,
+    answerSubmitted: false,
+
+    /* stato locale per la vista admin (tab corrente, settings editabili) */
+    tab: 'setup',
+    settings: {
+      rounds: 12, seconds: 30, initial_points: 100,
+      min_bet: 5, max_bet: 50,
+      time_factors: { 1: 0.7, 2: 1.0, 3: 1.4 },
+    },
 
     connect() {
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       this.ws = new WebSocket(`${proto}://${location.host}/ws`);
-      this.ws.onopen = () => { this.connected = true; };
+      this.ws.onopen  = () => { this.connected = true; };
       this.ws.onclose = () => { this.connected = false; };
       this.ws.onerror = () => { this.lastError = 'WebSocket error'; };
       this.ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'state/full') {
-          this.state = msg.data; this.lastError = null;
-          // sincronizza countdown col valore in state (snapshot)
+          const newPhase = msg.data.phase;
+          if (this.prevPhase && this.prevPhase !== newPhase) this.onPhaseChange(this.prevPhase, newPhase);
+          this.prevPhase = newPhase;
+          // sincronizza settings editabili al primo state ricevuto
+          // (oppure se l'utente non li ha ancora toccati: euristica = settings == default)
+          if (this.state === null && msg.data.settings && Object.keys(msg.data.settings).length) {
+            this.settings = JSON.parse(JSON.stringify(msg.data.settings));
+            // se il quiz e gia in corso, vai automaticamente alla tab Partita
+            if (msg.data.phase && msg.data.phase.startsWith('turn_')) this.tab = 'game';
+            else if (msg.data.phase === 'lobby') this.tab = 'lobby';
+          }
+          this.state = msg.data;
           this.countdown = msg.data.countdown_seconds_left;
+          this.lastError = null;
         } else if (msg.type === 'countdown/tick') {
           this.countdown = msg.data.seconds_left;
+          if (!this.muted) {
+            if (this.countdown <= 5)  RipassoneAudio.warn();
+            else if (this.countdown <= 10) RipassoneAudio.tick();
+          }
         } else if (msg.type === 'state/error') {
           this.lastError = msg.msg;
           setTimeout(() => this.lastError = null, 5000);
@@ -128,26 +139,136 @@ function ripassoneClient(role) {
           this.me = msg.data;
           localStorage.setItem('ripassone.me', JSON.stringify(this.me));
         }
-        this.events.unshift(msg);
-        if (this.events.length > 50) this.events.length = 50;
       };
     },
     send(type, data = {}) {
       if (!this.ws || this.ws.readyState !== 1) return;
       this.ws.send(JSON.stringify({ type, data }));
     },
-    forgetMe() { this.me = null; localStorage.removeItem('ripassone.me'); },
-  }
-}
+    enableAudio() { RipassoneAudio.enable(); this.audioReady = true; },
+    forgetMe()    { this.me = null; localStorage.removeItem('ripassone.me'); },
 
-/* JSON syntax highlight semplice per i viewer template */
-function jsonHL(o) {
-  return JSON.stringify(o, null, 2)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/("([^"\\]|\\.)*")(\s*:)/g, '<span class="k">$1</span>$3')
-    .replace(/:\s*("([^"\\]|\\.)*")/g, ': <span class="s">$1</span>')
-    .replace(/:\s*(true|false|null)/g, ': <span class="b">$1</span>')
-    .replace(/:\s*(-?\d+(\.\d+)?([eE][+-]?\d+)?)/g, ': <span class="n">$1</span>');
+    /* hook: reazioni audio ai cambi di phase + reset stato locale team */
+    onPhaseChange(from, to) {
+      // reset stato locale al passaggio fra fasi
+      if (to === 'turn_choice') {
+        this.selectedQuestionId = null;
+        this.bet = this.state?.settings?.min_bet || 5;
+        this.target = null;
+      }
+      if (to === 'turn_question') {
+        this.myChoice = null;
+        this.answerSubmitted = false;
+      }
+      // suoni
+      if (this.muted) return;
+      if (to === 'turn_reveal') {
+        const r = this.state?.rounds?.at(-1);
+        if (r?.is_correct) RipassoneAudio.ding();
+        else if (r?.timed_out) RipassoneAudio.timeUp();
+        else RipassoneAudio.buzzer();
+      }
+    },
+
+    /* helpers per i template */
+    isCaptainOf(teamId) { return this.me && this.state?.teams?.[teamId]?.captain_id === this.me.id; },
+    myTeam()  { return this.me ? this.state?.teams?.[this.me.team_id] : null; },
+    askingTeam()  {
+      const r = this.state?.rounds?.at(-1);
+      return r ? this.state?.teams?.[r.asking_team_id] : null;
+    },
+    currentRound() { return this.state?.rounds?.at(-1); },
+    currentQuestion() {
+      const r = this.currentRound();
+      return r?.question_id ? this.state?.questions_pool?.[r.question_id] : null;
+    },
+
+    /* === scelta del capitano (TURN_CHOICE) === */
+    availableLectures() {
+      const ls = new Set();
+      const used = new Set(this.state?.used_question_ids || []);
+      for (const id in (this.state?.questions_pool || {})) {
+        if (used.has(parseInt(id))) continue;
+        ls.add(this.state.questions_pool[id].lecture);
+      }
+      return Array.from(ls).sort();
+    },
+    toggleLecture(l) {
+      const i = this.filterLectures.indexOf(l);
+      if (i >= 0) this.filterLectures.splice(i, 1); else this.filterLectures.push(l);
+    },
+    toggleDiff(d) {
+      const i = this.filterDiff.indexOf(d);
+      if (i >= 0) this.filterDiff.splice(i, 1); else this.filterDiff.push(d);
+    },
+    filteredQuestions() {
+      const q = (this.filterQ || '').toLowerCase().trim();
+      const used = new Set(this.state?.used_question_ids || []);
+      return Object.values(this.state?.questions_pool || {}).filter(x => {
+        if (used.has(x.id)) return false;
+        if (this.filterLectures.length && !this.filterLectures.includes(x.lecture)) return false;
+        if (this.filterDiff.length && !this.filterDiff.includes(x.difficulty)) return false;
+        if (q && !((x.text || '').toLowerCase().includes(q) || (x.topic || '').toLowerCase().includes(q))) return false;
+        return true;
+      });
+    },
+    opponents() {
+      return Object.values(this.state?.teams || {}).filter(t => t.id !== this.me?.team_id);
+    },
+    canConfirmChoice() { return this.selectedQuestionId && this.target && this.bet >= 1; },
+    confirmChoice() {
+      if (!this.canConfirmChoice()) return;
+      this.send('captain/choose_question', {
+        captain_id: this.me.id,
+        question_id: this.selectedQuestionId,
+        bet: this.bet,
+        target: this.target,
+      });
+    },
+
+    /* === risposta / voto (TURN_QUESTION) === */
+    canAnswer() {
+      if (!this.isCaptainOf(this.me?.team_id)) return false;
+      const r = this.currentRound();
+      if (!r) return false;
+      if (r.asking_team_id === this.me.team_id) return false;
+      if (r.target !== 'open' && r.target !== this.me.team_id) return false;
+      return true;
+    },
+    canVote() {
+      if (this.isCaptainOf(this.me?.team_id)) return false;
+      const r = this.currentRound();
+      if (!r) return false;
+      if (r.asking_team_id === this.me.team_id) return false;
+      if (r.target !== 'open' && r.target !== this.me.team_id) return false;
+      return true;
+    },
+    canAnswerOrVote() { return this.canAnswer() || this.canVote(); },
+    onPick(letter) {
+      this.myChoice = letter;
+      if (this.canVote()) this.send('team/vote', { player_id: this.me.id, option: letter });
+    },
+    submitAnswer() {
+      if (!this.myChoice || this.answerSubmitted) return;
+      this.send('captain/answer', { captain_id: this.me.id, option: this.myChoice });
+      this.answerSubmitted = true;
+    },
+    votesFor(letter) {
+      const v = this.currentRound()?.member_votes || {};
+      return Object.entries(v).filter(([_, opt]) => opt === letter);
+    },
+
+    /* === admin === */
+    betsValid() {
+      const s = this.settings;
+      return s.min_bet >= 1 && s.max_bet > s.min_bet && s.max_bet < s.initial_points;
+    },
+    applySettings() {
+      if (!this.betsValid()) return;
+      this.send('admin/configure', this.settings);
+      this.tab = 'lobby';
+    },
+  };
 }
 </script>
 </body>
