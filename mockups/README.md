@@ -1,6 +1,16 @@
-# Mockup quizzone
+# Mockup — Il Ripassone
 
 File HTML statici autocontenuti (nessun backend, nessun build step). Aprili con doppio click nel browser.
+
+Branding e palette derivati dal logo `assets/logo.png`:
+
+| Token | Valore |
+|---|---|
+| Navy | `#1E3A5F` |
+| Teal | `#3795B5` |
+| Azzurro | `#7FB9CC` |
+| Oro (accento) | `#E8A93C` |
+| Sfondo | `#F4F7FA` |
 
 | File | Vista | Note |
 |---|---|---|
@@ -16,6 +26,6 @@ File HTML statici autocontenuti (nessun backend, nessun build step). Aprili con 
 
 - Tailwind CSS via Play CDN
 - Alpine.js via CDN per stato UI locale
-- Google Fonts: Bebas Neue (display) + Inter (UI) + JetBrains Mono (codice/URL)
+- Google Fonts: Playfair Display (titoli) + Inter (UI) + JetBrains Mono (codice/URL)
 
 I dati nei mockup sono **finti** (squadre, domanda, voti), servono solo a mostrare l'estetica.

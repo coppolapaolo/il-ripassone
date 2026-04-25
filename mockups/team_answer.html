@@ -2,183 +2,212 @@
 <html lang="it">
 <head>
 <meta charset="utf-8" />
-<title>Quizzone — Capitano · Rispondi</title>
+<title>Il Ripassone — Capitano · Rispondi</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
-  body { font-family: 'Inter', sans-serif; }
-  .display-font { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.02em; }
+  :root {
+    --navy: #1E3A5F;
+    --navy-deep: #122544;
+    --teal: #3795B5;
+    --azure: #7FB9CC;
+    --gold: #E8A93C;
+    --gold-deep: #B27D1E;
+    --paper: #F4F7FA;
+    --ink: #0F172A;
+    --ink-soft: #475569;
+    --rule: #E2E8F0;
+    --success: #15803D;
+    --danger: #B91C1C;
+  }
+  body { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--ink); }
+  .serif { font-family: 'Playfair Display', serif; letter-spacing: -0.01em; }
   .mono { font-family: 'JetBrains Mono', monospace; }
 
-  .bg-stage {
-    background:
-      radial-gradient(ellipse at top, rgba(56,189,248,0.12), transparent 60%),
-      linear-gradient(180deg, #050b1f 0%, #0a1330 60%, #050b1f 100%);
+  .panel {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    box-shadow:
+      0 1px 2px rgba(15,23,42,0.04),
+      0 6px 18px -8px rgba(15,23,42,0.08);
   }
-  .glass {
-    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-    border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(8px);
-  }
+  .accent-bar { height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--navy), var(--teal), var(--azure)); }
+
+  .tag { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; color: var(--ink-soft); }
+
+  /* opzioni */
   .opt-btn {
-    transition: all 0.2s;
-    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
-    border: 1px solid rgba(255,255,255,0.10);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    transition: all 0.18s ease-out;
+    text-align: left;
   }
-  .opt-btn:hover { transform: translateY(-2px); border-color: rgba(56,189,248,0.5); box-shadow: 0 10px 30px -10px rgba(56,189,248,0.4); }
+  .opt-btn:hover { border-color: var(--teal); transform: translateY(-1px); box-shadow: 0 6px 18px -6px rgba(55,149,181,0.30); }
   .opt-btn.selected {
-    background: linear-gradient(180deg, rgba(56,189,248,0.20), rgba(56,189,248,0.05));
-    border-color: rgba(56,189,248,0.8);
-    box-shadow: inset 0 0 0 1px rgba(56,189,248,0.5), 0 0 30px -5px rgba(56,189,248,0.6);
+    border-color: var(--teal);
+    background: linear-gradient(180deg, #F0F9FB 0%, #ffffff 100%);
+    box-shadow: 0 0 0 3px rgba(55,149,181,0.14), 0 6px 18px -6px rgba(55,149,181,0.30);
   }
+  .opt-btn.selected .opt-letter { color: var(--teal); }
 
   /* countdown */
-  .ring-track { stroke: rgba(255,255,255,0.08); }
-  .ring-progress { stroke: #38bdf8; transition: stroke-dashoffset 1s linear, stroke 0.3s; filter: drop-shadow(0 0 8px rgba(56,189,248,0.7)); }
-  .ring-progress.warn { stroke: #facc15; filter: drop-shadow(0 0 8px rgba(250,204,21,0.7)); }
-  .ring-progress.danger { stroke: #ef4444; filter: drop-shadow(0 0 12px rgba(239,68,68,0.9)); animation: pulse 0.6s ease-in-out infinite; }
+  .ring-track { stroke: #E2E8F0; }
+  .ring-progress { stroke: var(--teal); transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+  .ring-progress.warn { stroke: var(--gold); }
+  .ring-progress.danger { stroke: var(--danger); animation: pulse 0.7s ease-in-out infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 
-  /* big answer button */
+  /* CTA */
   .answer-cta {
-    background: linear-gradient(180deg, #facc15 0%, #eab308 100%);
-    color: #1e1b4b;
-    box-shadow: 0 12px 40px -8px rgba(250,204,21,0.55), inset 0 -3px 0 rgba(0,0,0,0.18);
+    background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 10px 24px -8px rgba(30,58,95,0.5), inset 0 -2px 0 rgba(0,0,0,0.18);
     transition: all 0.15s;
   }
-  .answer-cta:hover { transform: translateY(-2px); box-shadow: 0 18px 50px -8px rgba(250,204,21,0.7), inset 0 -3px 0 rgba(0,0,0,0.18); }
+  .answer-cta:hover { transform: translateY(-1px); box-shadow: 0 14px 30px -8px rgba(30,58,95,0.6), inset 0 -2px 0 rgba(0,0,0,0.18); }
   .answer-cta:active { transform: translateY(1px); }
-  .answer-cta:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .answer-cta:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
 
   /* member vote chip */
-  .vote-chip { transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); }
-
-  @keyframes flashRed {
-    0%,100% { background-color: rgba(239,68,68,0.0); }
-    50% { background-color: rgba(239,68,68,0.18); }
+  .vote-chip {
+    background: #ECFDF5; color: var(--success); border: 1px solid #BBF7D0;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
   }
-  .flash-danger { animation: flashRed 0.8s ease-in-out infinite; }
+
+  /* danger frame nei secondi finali (sobrio: solo bordo header) */
+  .danger-frame { box-shadow: inset 0 0 0 2px rgba(185,28,28,0.45) !important; }
+
+  .pip { width: 6px; height: 6px; border-radius: 99px; display: inline-block; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .pip-live { background: #22C55E; animation: blink 1.6s ease-in-out infinite; }
+
+  .logo-img { mix-blend-mode: multiply; }
 </style>
 </head>
-<body class="bg-stage text-white min-h-screen">
+<body class="min-h-screen">
 
-<div x-data="capitano()" class="min-h-screen max-w-3xl mx-auto px-4 py-5 flex flex-col gap-4"
-     :class="secondsLeft <= 5 && 'flash-danger'">
+<div x-data="capitano()" class="min-h-screen max-w-xl mx-auto px-4 py-4 flex flex-col gap-3">
 
-  <!-- HEADER squadra -->
-  <header class="glass rounded-2xl p-4 flex items-center justify-between">
+  <!-- HEADER mini logo -->
+  <header class="flex items-center justify-between">
+    <img src="assets/logo.png" alt="Il Ripassone" class="h-10 logo-img" />
+    <span class="tag">Capitano</span>
+  </header>
+  <div class="accent-bar"></div>
+
+  <!-- SQUADRA -->
+  <div class="panel p-4 flex items-center justify-between" :class="secondsLeft <= 5 && 'danger-frame'">
     <div class="flex items-center gap-3">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center display-font text-2xl"
-           :style="`background: ${team.color}20; color: ${team.color}; border: 1px solid ${team.color}80`">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center serif text-2xl font-bold"
+           :style="`background: ${team.color}1A; color: ${team.color}; border: 1px solid ${team.color}66`">
         <span x-text="team.name[0]"></span>
       </div>
       <div>
-        <div class="display-font text-2xl leading-none" x-text="team.name"></div>
-        <div class="text-xs text-slate-400 mt-1">
-          <span class="bg-yellow-400/20 text-yellow-300 px-1.5 py-0.5 rounded uppercase tracking-wider text-[10px] mr-1">Capitano</span>
-          <span x-text="me.name"></span>
+        <div class="serif text-xl font-semibold leading-tight" :style="`color: ${team.color}`" x-text="team.name"></div>
+        <div class="text-xs text-slate-500 mt-0.5">
+          <span class="font-medium" style="color:var(--ink)" x-text="me.name"></span>
         </div>
       </div>
     </div>
     <div class="text-right">
-      <div class="text-[10px] uppercase tracking-widest text-slate-400">Punteggio</div>
-      <div class="display-font text-3xl text-yellow-300 leading-none" x-text="team.score"></div>
-    </div>
-  </header>
-
-  <!-- META domanda -->
-  <div class="grid grid-cols-3 gap-2">
-    <div class="glass rounded-xl px-3 py-2 text-center">
-      <div class="text-[10px] uppercase tracking-widest text-slate-400">Da</div>
-      <div class="text-sm font-medium" :style="`color: ${question.askedBy.color}`" x-text="question.askedBy.name"></div>
-    </div>
-    <div class="glass rounded-xl px-3 py-2 text-center">
-      <div class="text-[10px] uppercase tracking-widest text-slate-400">In palio</div>
-      <div class="display-font text-2xl text-yellow-300 leading-none" x-text="question.bet"></div>
-    </div>
-    <div class="glass rounded-xl px-3 py-2 text-center">
-      <div class="text-[10px] uppercase tracking-widest text-slate-400">Lezione</div>
-      <div class="text-sm mono" x-text="question.lecture"></div>
+      <div class="tag">Punti</div>
+      <div class="serif text-3xl font-bold leading-none" style="color:var(--navy)" x-text="team.score"></div>
     </div>
   </div>
 
-  <!-- COUNTDOWN compatto -->
-  <div class="glass rounded-2xl p-4 flex items-center gap-4">
+  <!-- META domanda -->
+  <div class="grid grid-cols-3 gap-2">
+    <div class="panel px-3 py-2.5 text-center">
+      <div class="tag mb-0.5">Da</div>
+      <div class="text-sm font-semibold leading-tight" :style="`color: ${question.askedBy.color}`" x-text="question.askedBy.name"></div>
+    </div>
+    <div class="panel px-3 py-2.5 text-center" style="border-color: rgba(232,169,60,0.4)">
+      <div class="tag mb-0.5" style="color:var(--gold-deep)">In palio</div>
+      <div class="serif text-2xl font-bold leading-none" style="color:var(--navy)" x-text="question.bet"></div>
+    </div>
+    <div class="panel px-3 py-2.5 text-center">
+      <div class="tag mb-0.5">Lezione</div>
+      <div class="mono text-sm font-semibold" style="color:var(--navy)" x-text="question.lecture"></div>
+    </div>
+  </div>
+
+  <!-- COUNTDOWN -->
+  <div class="panel p-4 flex items-center gap-4">
     <div class="relative w-20 h-20 flex-shrink-0">
       <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" stroke-width="6" fill="none" class="ring-track"/>
-        <circle cx="50" cy="50" r="45" stroke-width="7" fill="none" stroke-linecap="round"
+        <circle cx="50" cy="50" r="45" stroke-width="5" fill="none" class="ring-track"/>
+        <circle cx="50" cy="50" r="45" fill="none" stroke-width="6.5" stroke-linecap="round"
                 class="ring-progress" :class="ringClass()"
                 stroke-dasharray="282.74" :stroke-dashoffset="282.74 * (1 - secondsLeft/totalSeconds)"/>
       </svg>
       <div class="absolute inset-0 flex items-center justify-center">
-        <span class="display-font tabular-nums text-3xl"
-              :class="secondsLeft <= 5 ? 'text-red-400' : (secondsLeft <= 10 ? 'text-yellow-300' : 'text-white')"
+        <span class="serif font-bold tabular-nums text-3xl"
+              :style="secondsLeft <= 5 ? 'color:var(--danger)' : (secondsLeft <= 10 ? 'color:var(--gold-deep)' : 'color:var(--navy)')"
               x-text="secondsLeft"></span>
       </div>
     </div>
     <div class="flex-1">
-      <div class="text-[10px] uppercase tracking-widest text-slate-400">Tempo per rispondere</div>
-      <div class="text-sm text-slate-300 mt-1">
+      <div class="tag">Tempo per rispondere</div>
+      <div class="text-sm mt-1" style="color:var(--ink-soft)">
         <template x-if="question.target === 'open'">
-          <span><span class="text-sky-300 font-medium">Aperta a tutti</span> · primo che risponde blocca</span>
+          <span><span class="font-semibold" style="color:var(--teal)">Aperta a tutti</span> · primo che risponde blocca</span>
         </template>
         <template x-if="question.target === 'me'">
-          <span>Domanda <span class="text-yellow-300 font-medium">indirizzata a te</span></span>
+          <span>Domanda <span class="font-semibold" style="color:var(--gold-deep)">indirizzata a te</span></span>
         </template>
       </div>
     </div>
   </div>
 
   <!-- DOMANDA -->
-  <div class="glass rounded-2xl p-5">
-    <div class="text-[10px] uppercase tracking-widest text-slate-400 mb-2">Domanda</div>
-    <p class="text-lg leading-snug" x-text="question.text"></p>
+  <div class="panel p-5">
+    <div class="tag mb-2">Domanda</div>
+    <p class="serif text-lg font-medium leading-snug" style="color:var(--ink)" x-text="question.text"></p>
   </div>
 
   <!-- OPZIONI -->
   <div class="grid grid-cols-1 gap-2.5">
     <template x-for="opt in question.options" :key="opt.letter">
       <button @click="selected = opt.letter; submitted = false"
-              class="opt-btn rounded-xl p-4 text-left flex items-start gap-4 group"
+              class="opt-btn p-4 flex items-start gap-4"
               :class="selected === opt.letter && 'selected'">
-        <div class="display-font text-3xl w-10 text-center flex-shrink-0"
-             :class="selected === opt.letter ? 'text-sky-300' : 'text-slate-500'"
-             x-text="opt.letter"></div>
+        <div class="opt-letter serif text-3xl font-bold w-9 text-center leading-none flex-shrink-0" style="color:var(--ink-soft)" x-text="opt.letter"></div>
         <div class="flex-1">
-          <div class="text-base leading-snug" x-text="opt.text"></div>
-          <!-- voti compagni -->
-          <div class="flex flex-wrap gap-1.5 mt-2.5" x-show="votesFor(opt.letter).length">
+          <div class="text-base leading-snug" style="color:var(--ink)" x-text="opt.text"></div>
+          <div class="flex flex-wrap gap-1.5 mt-2" x-show="votesFor(opt.letter).length">
             <template x-for="v in votesFor(opt.letter)" :key="v.id">
-              <span class="vote-chip text-[11px] bg-white/10 border border-white/10 rounded-full px-2 py-0.5 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span class="vote-chip text-[11px] rounded-full px-2 py-0.5 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 <span x-text="v.name"></span>
               </span>
             </template>
           </div>
         </div>
         <template x-if="votesFor(opt.letter).length">
-          <div class="display-font text-xl text-emerald-300 mt-1" x-text="votesFor(opt.letter).length"></div>
+          <div class="serif text-xl font-bold mt-0.5" style="color:var(--success)" x-text="votesFor(opt.letter).length"></div>
         </template>
       </button>
     </template>
   </div>
 
-  <!-- CTA risposta -->
-  <button class="answer-cta rounded-2xl py-5 display-font text-3xl tracking-wider mt-2"
+  <!-- CTA -->
+  <button class="answer-cta rounded-2xl py-4 serif text-2xl font-bold tracking-wide mt-1"
           :disabled="!selected || submitted"
           @click="submit()">
-    <span x-show="!submitted">RISPONDI ▸ <span x-text="selected || '—'"></span></span>
-    <span x-show="submitted">⏳ INVIATA · ATTENDI…</span>
+    <span x-show="!submitted">Rispondi · <span x-text="selected || '—'"></span></span>
+    <span x-show="submitted">Risposta inviata · attendi…</span>
   </button>
 
-  <!-- BANNER membri votano -->
-  <div class="glass rounded-xl px-4 py-3 text-xs text-slate-400 flex items-center justify-between">
-    <span><span class="display-font text-base text-white" x-text="memberVotes.length"></span><span class="text-slate-500">/</span><span x-text="team.memberCount - 1"></span> compagni hanno votato</span>
-    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> aggiornamento live</span>
+  <!-- FOOTER live -->
+  <div class="panel px-4 py-3 text-xs flex items-center justify-between" style="color:var(--ink-soft)">
+    <span><span class="serif text-base font-bold" style="color:var(--ink)" x-text="memberVotes.length"></span><span class="text-slate-400">/</span><span x-text="team.memberCount - 1"></span> compagni hanno votato</span>
+    <span class="flex items-center gap-1.5"><span class="pip pip-live"></span> live</span>
   </div>
 
 </div>
@@ -187,7 +216,7 @@
 function capitano() {
   return {
     me: { id: 'p1', name: 'Marta Rossi' },
-    team: { name: 'I Cybernauti', color: '#facc15', score: 185, memberCount: 4 },
+    team: { name: 'I Cybernauti', color: '#E8A93C', score: 185, memberCount: 4 },
     selected: null, submitted: false,
     totalSeconds: 30, secondsLeft: 14,
     memberVotes: [
@@ -197,7 +226,7 @@ function capitano() {
     ],
     question: {
       lecture: 'L11', bet: 50, target: 'open',
-      askedBy: { name: 'Le Algoritmiche', color: '#38bdf8' },
+      askedBy: { name: 'Le Algoritmiche', color: '#3795B5' },
       text: "Quale principio prevede l'art. 64-bis del CAD per l'accesso ai servizi digitali della PA?",
       options: [
         { letter: 'A', text: 'Accesso libero senza autenticazione per tutti i cittadini' },
