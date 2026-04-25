@@ -326,16 +326,60 @@
         <div class="grid grid-cols-2 gap-4">
           <label class="flex flex-col gap-1">
             <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Numero round</span>
-            <input type="number" value="12" class="toon-sm toon px-3 py-2 display-font text-2xl"/>
+            <input type="number" min="1" x-model.number="settings.rounds" class="toon-sm toon px-3 py-2 display-font text-2xl"/>
           </label>
           <label class="flex flex-col gap-1">
             <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Tempo per domanda (s)</span>
-            <input type="number" value="30" class="toon-sm toon px-3 py-2 display-font text-2xl"/>
+            <input type="number" min="5" x-model.number="settings.seconds" class="toon-sm toon px-3 py-2 display-font text-2xl"/>
           </label>
           <label class="flex flex-col gap-1 col-span-2">
             <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Punti iniziali · default per squadra</span>
-            <input type="number" value="100" class="toon-sm toon px-3 py-2 display-font text-2xl"/>
+            <input type="number" min="2" x-model.number="settings.initialPoints" class="toon-sm toon px-3 py-2 display-font text-2xl"/>
+            <span class="text-[11px]" style="color:var(--navy-soft)">Modificabile poi per ogni squadra in Lobby.</span>
           </label>
+
+          <!-- Puntata minima -->
+          <label class="flex flex-col gap-1">
+            <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Puntata minima</span>
+            <input type="number"
+                   min="1"
+                   :max="settings.maxBet - 1"
+                   x-model.number="settings.minBet"
+                   class="toon-sm toon px-3 py-2 display-font text-2xl"
+                   :style="settings.minBet < 1 || settings.minBet >= settings.maxBet ? 'border-color: var(--coral); box-shadow: 3px 3px 0 var(--coral);' : ''"/>
+            <span class="text-[11px]" style="color:var(--navy-soft)">
+              Da <b>1</b> a <b x-text="settings.maxBet - 1"></b>
+            </span>
+          </label>
+
+          <!-- Puntata massima -->
+          <label class="flex flex-col gap-1">
+            <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Puntata massima</span>
+            <input type="number"
+                   :min="settings.minBet + 1"
+                   :max="settings.initialPoints - 1"
+                   x-model.number="settings.maxBet"
+                   class="toon-sm toon px-3 py-2 display-font text-2xl"
+                   :style="settings.maxBet <= settings.minBet || settings.maxBet >= settings.initialPoints ? 'border-color: var(--coral); box-shadow: 3px 3px 0 var(--coral);' : ''"/>
+            <span class="text-[11px]" style="color:var(--navy-soft)">
+              Da <b x-text="settings.minBet + 1"></b> a <b x-text="settings.initialPoints - 1"></b> (sotto i punti iniziali)
+            </span>
+          </label>
+
+          <!-- Riassunto / warning catena -->
+          <div class="col-span-2 toon-sm toon p-3 flex items-center gap-3" :style="betsValid ? 'background:#ECFDF5; border-color:var(--success); box-shadow:3px 3px 0 var(--success);' : 'background:#FFE4E0; border-color:var(--coral); box-shadow:3px 3px 0 var(--coral);'">
+            <template x-if="betsValid">
+              <span class="display-font text-base" style="color:var(--success);">✓ Range puntate valido:</span>
+            </template>
+            <template x-if="!betsValid">
+              <span class="display-font text-base" style="color:var(--coral);">⚠ Range non valido:</span>
+            </template>
+            <span class="text-sm">
+              <b x-text="settings.minBet"></b> ≤ puntata ≤ <b x-text="settings.maxBet"></b>
+              <span style="color:var(--navy-soft)"> · punti iniziali </span><b x-text="settings.initialPoints"></b>
+            </span>
+          </div>
+
         </div>
       </div>
       <div class="toon p-5">
@@ -378,6 +422,21 @@ function admin() {
     bet: 50,
     target: 'open',
     phase: 'question', // setup|question|reveal|next
+
+    /* parametri quiz (sezione Setup) */
+    settings: {
+      rounds: 12,
+      seconds: 30,
+      initialPoints: 100,
+      minBet: 5,
+      maxBet: 50,
+    },
+    get betsValid() {
+      const s = this.settings;
+      return s.minBet >= 1
+          && s.maxBet > s.minBet
+          && s.maxBet < s.initialPoints;
+    },
     askingTeam:    { id: 't1', name: 'I CYBERNAUTI',    color: '#D9A52F' },
     answeringTeam: { id: 't3', name: 'LE ALGORITMICHE', color: '#2A8893' },
     currentQuestion: { lecture: 'L11', text: "Quale principio prevede l'art. 64-bis del CAD per l'accesso ai servizi digitali della PA?" },
