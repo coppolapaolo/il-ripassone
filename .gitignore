@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# uv / virtualenv
+.venv/
+venv/
+env/
+
+# macOS / Drive sync
+.DS_Store
+Icon
+Icon?
+._*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Runtime / logs
+*.log
+*.sqlite
+*.sqlite3
+*.db
+
+# File caricati dall'admin in esecuzione (non committare)
+uploads/
+data/runtime/
