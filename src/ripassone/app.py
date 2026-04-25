@@ -5,6 +5,11 @@ sono gating per cookie di sessione (vedi auth.py).
 """
 from __future__ import annotations
 
+import io
+import os
+
+import qrcode
+import qrcode.image.svg
 from fastapi import FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -12,6 +17,23 @@ from fastapi.templating import Jinja2Templates
 
 from ripassone import auth, config, excel, state
 from ripassone.ws import broadcast_state, router as ws_router
+
+
+def _qr_svg(text: str, box_size: int = 8) -> str:
+    """Genera un QR code come stringa SVG inline (no immagine, scala vettoriale)."""
+    factory = qrcode.image.svg.SvgPathImage
+    img = qrcode.make(text, image_factory=factory, box_size=box_size, border=2)
+    buf = io.BytesIO()
+    img.save(buf)
+    return buf.getvalue().decode()
+
+
+def _public_base(request: Request) -> str:
+    """URL pubblico se disponibile (set da main.py --public), altrimenti URL del request corrente."""
+    env = os.environ.get("RIPASSONE_PUBLIC_URL")
+    if env:
+        return env
+    return f"{request.url.scheme}://{request.url.netloc}"
 
 app = FastAPI(title="Il Ripassone")
 
@@ -36,6 +58,20 @@ async def team(request: Request) -> HTMLResponse:
 @app.get("/display", response_class=HTMLResponse)
 async def display(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "display.html", {"role": "display"})
+
+
+@app.get("/info", response_class=HTMLResponse)
+async def info(request: Request) -> HTMLResponse:
+    """Pagina con QR + URL utili da proiettare in classe prima di iniziare."""
+    base = _public_base(request)
+    return templates.TemplateResponse(request, "info.html", {
+        "role": "info",
+        "base": base,
+        "team_url": f"{base}/team",
+        "display_url": f"{base}/display",
+        "team_qr_svg": _qr_svg(f"{base}/team", box_size=10),
+        "display_qr_svg": _qr_svg(f"{base}/display", box_size=8),
+    })
 
 
 # ============================================================

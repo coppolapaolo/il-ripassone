@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Info · Il Ripassone{% endblock %}
+{% block head_extra %}
+<style>
+  .qr-card svg { width: 100%; height: auto; display: block; }
+  .qr-card svg path { fill: var(--navy); }
+</style>
+{% endblock %}
+{% block body %}
+<div class="min-h-screen flex flex-col p-6 gap-6">
+
+  <header class="flex items-center justify-center gap-4">
+    <img src="/static/img/hero.png" alt="Il Ripassone!" class="h-32 w-auto"
+         style="filter: drop-shadow(0 8px 16px rgba(0,0,0,0.18)) drop-shadow(0 2px 4px rgba(0,0,0,0.10));"/>
+  </header>
+
+  <div class="ribbon-bar"></div>
+
+  <main class="flex-1 grid gap-6 max-w-6xl mx-auto w-full" style="grid-template-columns: 1fr 1fr;">
+
+    <!-- Squadra -->
+    <section class="toon p-8 text-center flex flex-col items-center">
+      <div class="toon toon-coral toon-sm px-4 py-2 mb-4 -rotate-2">
+        <span class="display-font text-3xl title-outlined leading-none">SQUADRA</span>
+      </div>
+      <p class="text-xl mb-5">Studenti: inquadra il QR<br/>oppure apri l-URL sotto.</p>
+      <div class="qr-card toon-sm toon p-4 mb-5" style="background:#fff; max-width: 360px;">
+        {{ team_qr_svg|safe }}
+      </div>
+      <div class="mono text-base px-4 py-2 toon-sm toon" style="background:var(--cream); word-break: break-all;">
+        {{ team_url }}
+      </div>
+    </section>
+
+    <!-- Display -->
+    <section class="toon p-8 text-center flex flex-col items-center">
+      <div class="toon toon-teal toon-sm px-4 py-2 mb-4 rotate-2">
+        <span class="display-font text-3xl title-outlined leading-none">DISPLAY</span>
+      </div>
+      <p class="text-xl mb-5">Proiettore: apri questo URL.<br/>Audio attivo dopo il primo click.</p>
+      <div class="qr-card toon-sm toon p-4 mb-5" style="background:#fff; max-width: 280px;">
+        {{ display_qr_svg|safe }}
+      </div>
+      <div class="mono text-base px-4 py-2 toon-sm toon" style="background:var(--cream); word-break: break-all;">
+        {{ display_url }}
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Status partita (live se gia in corso) -->
+  <section class="toon p-4 max-w-6xl mx-auto w-full text-center">
+    <span class="display-font text-sm uppercase mr-3" style="color:var(--navy-soft)">Stato corrente</span>
+    <span class="display-font text-2xl" x-text="state?.phase || '…'"></span>
+    <span class="ml-4 text-sm" style="color:var(--navy-soft)">
+      <span class="display-font text-base" x-text="Object.keys(state?.teams || {}).length"></span> squadre ·
+      <span class="display-font text-base" x-text="Object.keys(state?.players || {}).length"></span> giocatori connessi
+    </span>
+  </section>
+
+  <footer class="text-center text-xs" style="color:var(--navy-soft)">
+    Master Diritto per l-Innovazione · LM-63 · Universita di Udine
+  </footer>
+
+</div>
+{% endblock %}
