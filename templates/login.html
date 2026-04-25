@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Login admin · Il Ripassone{% endblock %}
+{% block body %}
+<div class="min-h-screen flex flex-col items-center justify-center p-6 gap-6">
+  <div class="toon toon-yellow toon-sm px-5 py-2.5 -rotate-1">
+    <h1 class="display-font text-3xl title-outlined leading-none">IL RIPASSONE!</h1>
+  </div>
+
+  <form method="post" action="/login" class="toon p-6 max-w-sm w-full flex flex-col gap-3">
+    <div class="display-font text-xl mb-1" style="color:var(--coral)">⚙ Login admin</div>
+    <p class="text-xs" style="color:var(--navy-soft)">Inserisci la password admin per accedere al pannello di controllo.</p>
+
+    <input type="password" name="password" required autofocus
+           class="input-toon" placeholder="password" autocomplete="current-password"/>
+
+    {% if error %}
+    <div class="toon-sm toon px-3 py-2 text-sm" style="background:#FFE4E0; border-color:var(--coral); color:var(--coral); box-shadow:3px 3px 0 var(--coral);">
+      ⚠ Password errata
+    </div>
+    {% endif %}
+
+    <button class="btn-toon coral" type="submit">▸ Entra</button>
+  </form>
+</div>
+{% endblock %}

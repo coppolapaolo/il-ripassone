@@ -189,6 +189,23 @@ async def admin_seed_demo_questions() -> None:
             STATE.questions_pool[q.id] = q
 
 
+async def admin_add_questions(questions: list[Question]) -> int:
+    """Aggiunge un blocco di domande al pool. Riassegna gli id partendo
+    da max(pool_ids)+1 per evitare collisioni con pool gia caricati.
+    Ritorna il numero di domande aggiunte."""
+    async with _lock:
+        if _phase() not in (Phase.SETUP, Phase.LOBBY):
+            raise StateError("Le domande si caricano solo in SETUP/LOBBY")
+        next_id = (max(STATE.questions_pool.keys()) + 1) if STATE.questions_pool else 1
+        added = 0
+        for q in questions:
+            new_q = q.model_copy(update={"id": next_id})
+            STATE.questions_pool[next_id] = new_q
+            next_id += 1
+            added += 1
+        return added
+
+
 async def admin_reset() -> None:
     """Reset totale dello stato (utile dopo FINISHED o per debug).
 

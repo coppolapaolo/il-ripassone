@@ -17,7 +17,7 @@ from typing import Awaitable, Callable
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from ripassone import state
+from ripassone import auth, state
 from ripassone.models import Settings
 
 router = APIRouter()
@@ -188,6 +188,7 @@ HANDLERS: dict[str, Callable[[WebSocket, dict], Awaitable[None]]] = {
 async def ws_endpoint(ws: WebSocket) -> None:
     await manager.connect(ws)
     await ws.send_json(state_snapshot())
+    is_admin = auth.is_admin_ws(ws)
     try:
         while True:
             msg = await ws.receive_json()
@@ -198,6 +199,13 @@ async def ws_endpoint(ws: WebSocket) -> None:
                 await ws.send_json({
                     "type": "state/error",
                     "msg": f"Evento sconosciuto: {event_type}",
+                })
+                continue
+            # gating: solo l'admin (cookie valido) puo inviare eventi admin/*
+            if event_type.startswith("admin/") and not is_admin:
+                await ws.send_json({
+                    "type": "state/error",
+                    "msg": f"Non autorizzato per {event_type} (login admin richiesto)",
                 })
                 continue
             try:
