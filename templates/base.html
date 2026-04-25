@@ -83,6 +83,11 @@
   <span class="pip" :class="connected ? 'pip-live' : 'pip-dead'"></span>
   <span class="display-font text-xs uppercase">WS · <span x-text="role"></span></span>
   <span class="text-[11px]" style="color:var(--navy-soft)">phase: <b style="color:var(--navy)" x-text="state?.phase"></b></span>
+  <template x-if="state?.phase === 'turn_question' && countdown !== null">
+    <span class="display-font text-base px-2 py-0.5 rounded toon-sm" :style="countdown <= 5 ? 'background:var(--coral); color:#fff;' : (countdown <= 10 ? 'background:var(--yellow); color:var(--navy);' : 'background:var(--teal); color:#fff;')">
+      ⏱ <span x-text="countdown"></span>s
+    </span>
+  </template>
   <template x-if="lastError">
     <span class="text-[11px]" style="color:var(--coral); font-weight:600;" x-text="'⚠ ' + lastError"></span>
   </template>
@@ -96,6 +101,7 @@ function ripassoneClient(role) {
     connected: false,
     state: null,           // ultimo state/full ricevuto
     lastError: null,
+    countdown: null,       // seconds_left ricevuto via countdown/tick (real-time)
     /* eventi non-state ricevuti, utili al singolo template */
     events: [],
     /* memoria per il client (sopravvive ai refresh) */
@@ -109,9 +115,16 @@ function ripassoneClient(role) {
       this.ws.onerror = () => { this.lastError = 'WebSocket error'; };
       this.ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
-        if (msg.type === 'state/full')      { this.state = msg.data; this.lastError = null; }
-        else if (msg.type === 'state/error') { this.lastError = msg.msg; setTimeout(() => this.lastError = null, 5000); }
-        else if (msg.type === 'team/joined') {
+        if (msg.type === 'state/full') {
+          this.state = msg.data; this.lastError = null;
+          // sincronizza countdown col valore in state (snapshot)
+          this.countdown = msg.data.countdown_seconds_left;
+        } else if (msg.type === 'countdown/tick') {
+          this.countdown = msg.data.seconds_left;
+        } else if (msg.type === 'state/error') {
+          this.lastError = msg.msg;
+          setTimeout(() => this.lastError = null, 5000);
+        } else if (msg.type === 'team/joined') {
           this.me = msg.data;
           localStorage.setItem('ripassone.me', JSON.stringify(this.me));
         }

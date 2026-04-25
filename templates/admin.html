@@ -11,16 +11,20 @@
 
   <!-- Bottoni di controllo della state machine -->
   <section class="toon p-4 flex flex-wrap items-center gap-2">
-    <span class="display-font text-xs uppercase mr-2" style="color:var(--navy-soft)">Eventi admin (Tappa 2)</span>
+    <span class="display-font text-xs uppercase mr-2" style="color:var(--navy-soft)">Eventi admin</span>
 
-    <button class="btn-toon green" @click="send('admin/configure', { rounds: 6, seconds: 30, initial_points: 100, min_bet: 5, max_bet: 50 })">
-      ⚙ Configure default
+    <button class="btn-toon green" @click="send('admin/configure', { rounds: 4, seconds: 20, initial_points: 100, min_bet: 5, max_bet: 50 })">
+      ⚙ Configure
+    </button>
+
+    <button class="btn-toon teal" @click="send('admin/seed_demo')">
+      📚 Seed demo (6 domande)
     </button>
 
     <button class="btn-toon coral"
             :disabled="state?.phase !== 'lobby'"
             @click="send('admin/start_quiz')">
-      ▶ Start quiz
+      ▶ Start
     </button>
 
     <button class="btn-toon"
@@ -29,11 +33,93 @@
       ⏭ Next turn
     </button>
 
+    <button class="btn-toon coral" @click="if(confirm('Termina quiz?')) send('admin/end_quiz')">
+      ⏹ End
+    </button>
+
+    <button class="btn-toon" @click="if(confirm('Reset totale?')) { send('admin/reset'); forgetMe(); }">
+      ↺ Reset
+    </button>
+
     <span class="ml-auto text-xs" style="color:var(--navy-soft)">
-      phase: <b style="color:var(--navy)" x-text="state?.phase"></b>
-      · round <b x-text="state?.rounds?.length || 0"></b>/<b x-text="state?.settings?.rounds || '?'"></b>
-      · squadre <b x-text="Object.keys(state?.teams || {}).length"></b>
+      round <b style="color:var(--navy)" x-text="state?.rounds?.length || 0"></b>/<b x-text="state?.settings?.rounds || '?'"></b>
+      · squadre <b style="color:var(--navy)" x-text="Object.keys(state?.teams || {}).length"></b>
+      · pool <b style="color:var(--navy)" x-text="Object.keys(state?.questions_pool || {}).length"></b>
+      · usate <b style="color:var(--navy)" x-text="(state?.used_question_ids || []).length"></b>
     </span>
+  </section>
+
+  <!-- Pannello turno corrente: dettaglio + countdown live -->
+  <section class="toon p-4" x-show="state?.phase && state.phase.startsWith('turn_')">
+    <div class="display-font text-sm uppercase mb-2" style="color:var(--navy-soft)">Turno corrente</div>
+    <template x-if="state?.rounds?.length">
+      <div class="flex flex-wrap items-baseline gap-3">
+        <span>Round <b x-text="state.rounds.at(-1).number"></b></span>
+        <span>·</span>
+        <span>pone:
+          <span class="display-font text-base" :style="`color:${state?.teams?.[state.rounds.at(-1).asking_team_id]?.color}; -webkit-text-stroke:0.4px var(--navy);`"
+                x-text="state?.teams?.[state.rounds.at(-1).asking_team_id]?.name"></span>
+        </span>
+        <template x-if="state.rounds.at(-1).question_id">
+          <span>· puntata <b style="color:var(--coral)" x-text="state.rounds.at(-1).bet"></b> pt</span>
+        </template>
+        <template x-if="state.rounds.at(-1).target">
+          <span>· target
+            <b x-text="state.rounds.at(-1).target === 'open' ? 'APERTA' : state?.teams?.[state.rounds.at(-1).target]?.name"></b>
+          </span>
+        </template>
+        <template x-if="state.rounds.at(-1).seconds_total">
+          <span>· tempo <b x-text="state.rounds.at(-1).seconds_total"></b>s</span>
+        </template>
+        <template x-if="state.rounds.at(-1).answer_letter">
+          <span>· risposta
+            <b :style="state.rounds.at(-1).is_correct ? 'color:var(--success)' : 'color:var(--coral)'"
+               x-text="state.rounds.at(-1).answer_letter + (state.rounds.at(-1).is_correct ? ' ✓' : ' ✗')"></b>
+          </span>
+        </template>
+        <template x-if="state.rounds.at(-1).timed_out">
+          <span>· <b style="color:var(--coral)">⏱ TIMEOUT</b></span>
+        </template>
+      </div>
+    </template>
+
+    <!-- Test rapidi (solo per debug, in produzione li fa il capitano dalla sua UI) -->
+    <details class="mt-3 text-xs">
+      <summary class="cursor-pointer" style="color:var(--navy-soft)">▾ Helper di test (sim. azioni capitano)</summary>
+      <div class="mt-2 flex flex-wrap items-center gap-2">
+        <span class="text-[11px]" style="color:var(--navy-soft)">Usa l'admin come "super-capitano" per simulare azioni:</span>
+        <template x-if="state?.phase === 'turn_choice'">
+          <span class="flex items-center gap-2">
+            <span class="text-[11px]">Scegli prima domanda disponibile, bet 10, target prima squadra avversaria:</span>
+            <button class="btn-toon" style="font-size:11px; padding:4px 8px;"
+                    @click="(() => {
+                      const r = state.rounds.at(-1);
+                      const askingId = r.asking_team_id;
+                      const captainId = state.teams[askingId].captain_id;
+                      const opp = Object.keys(state.teams).find(id => id !== askingId);
+                      const qid = Object.keys(state.questions_pool).map(Number).find(id => !state.used_question_ids.includes(id));
+                      if (qid === undefined) { alert('pool esaurito'); return; }
+                      send('captain/choose_question', { captain_id: captainId, question_id: qid, bet: 10, target: opp });
+                    })()">▸ choose</button>
+          </span>
+        </template>
+        <template x-if="state?.phase === 'turn_question'">
+          <span class="flex items-center gap-2">
+            <span class="text-[11px]">Risposta del capitano "target" (se aperta: prima squadra avversaria):</span>
+            <template x-for="L in ['A','B','C','D']" :key="L">
+              <button class="btn-toon" style="font-size:11px; padding:4px 8px;"
+                      @click="(() => {
+                        const r = state.rounds.at(-1);
+                        let answeringId = r.target;
+                        if (answeringId === 'open') answeringId = Object.keys(state.teams).find(id => id !== r.asking_team_id);
+                        const captainId = state.teams[answeringId].captain_id;
+                        send('captain/answer', { captain_id: captainId, option: L });
+                      })()" x-text="'⌨ ' + L"></button>
+            </template>
+          </span>
+        </template>
+      </div>
+    </details>
   </section>
 
   <!-- Squadre + giocatori (live) -->

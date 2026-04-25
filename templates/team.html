@@ -44,6 +44,41 @@
     <button class="btn-toon mt-3" style="font-size: 12px; padding: 6px 10px;" @click="forgetMe()">forget me (debug)</button>
   </section>
 
+  <!-- Pannello di gioco (visibile solo se joinati) -->
+  <section class="toon p-4" x-show="me && state?.phase === 'turn_question'" x-cloak>
+    <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">
+      <template x-if="state?.teams?.[me?.team_id]?.captain_id === me?.id">
+        <span style="color:var(--coral)">★ Sei il CAPITANO — rispondi:</span>
+      </template>
+      <template x-if="state?.teams?.[me?.team_id]?.captain_id !== me?.id">
+        <span>Vota (suggerisci al capitano):</span>
+      </template>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <template x-for="L in ['A','B','C','D']" :key="L">
+        <button class="btn-toon"
+                @click="(() => {
+                  const isCap = state.teams[me.team_id].captain_id === me.id;
+                  if (isCap) send('captain/answer', { captain_id: me.id, option: L });
+                  else       send('team/vote',      { player_id: me.id,  option: L });
+                })()"
+                x-text="L"></button>
+      </template>
+    </div>
+    <!-- mostra al capitano i voti dei compagni in tempo reale -->
+    <template x-if="state?.teams?.[me?.team_id]?.captain_id === me?.id">
+      <div class="text-xs mt-3" style="color:var(--navy-soft)">
+        Voti dei compagni:
+        <template x-for="[pid, opt] in Object.entries(state?.rounds?.at(-1)?.member_votes || {})" :key="pid">
+          <span class="mono mx-1">
+            <span x-text="state?.players?.[pid]?.first_name || pid"></span>:<b x-text="opt"></b>
+          </span>
+        </template>
+        <span x-show="!Object.keys(state?.rounds?.at(-1)?.member_votes || {}).length" style="color:var(--navy-soft)">nessun voto</span>
+      </div>
+    </template>
+  </section>
+
   <!-- Squadre live -->
   <section class="toon p-3">
     <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">Squadre in lobby</div>

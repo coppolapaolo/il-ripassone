@@ -31,6 +31,13 @@ class Settings(BaseModel):
     initial_points: int = 100
     min_bet: int = 5
     max_bet: int = 50
+    # moltiplicatori del countdown per livello di difficolta (1 facile, 2 media, 3 tosta)
+    time_factors: dict[int, float] = Field(default_factory=lambda: {1: 0.7, 2: 1.0, 3: 1.4})
+
+    def seconds_for_difficulty(self, difficulty: int) -> int:
+        """Ritorna il countdown in secondi (intero) per la difficolta data."""
+        factor = self.time_factors.get(difficulty, 1.0)
+        return max(5, round(self.seconds * factor))
 
 
 class Player(BaseModel):
@@ -78,9 +85,14 @@ class Round(BaseModel):
     question_id: int | None = None
     bet: int | None = None
     target: str | None = None  # "open" oppure team_id
+    seconds_total: int | None = None  # countdown totale calcolato dalla difficolta
     answer_letter: Letter | None = None
     answer_team_id: str | None = None  # squadra che ha risposto (per buzzer/aperta)
+    is_correct: bool | None = None
+    timed_out: bool = False
     points_delta: dict[str, int] = Field(default_factory=dict)  # team_id -> +/- pt
+    # voti dei membri non-capitani: player_id -> letter
+    member_votes: dict[str, Letter] = Field(default_factory=dict)
 
 
 class GameState(BaseModel):

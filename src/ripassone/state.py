@@ -4,6 +4,7 @@ Il modulo espone:
 - STATE: l'istanza unica del GameState in RAM
 - transition(): cambio di phase con check delle transizioni valide
 - handler async per ogni evento WebSocket (admin/team/captain)
+- tick_countdown(): chiamata dall'orchestrator (ws.py) ogni secondo
 
 Tutti gli handler che mutano lo stato passano per _lock per evitare
 race conditions con eventi concorrenti.
@@ -19,6 +20,8 @@ from ripassone.models import (
     Letter,
     Phase,
     Player,
+    Question,
+    QuestionOption,
     Round,
     Settings,
     Team,
@@ -62,8 +65,14 @@ class StateError(Exception):
     """
 
 
+def _phase() -> Phase:
+    """Helper: ritorna la phase corrente come enum (anche se serializzata come stringa)."""
+    p = STATE.phase
+    return Phase(p) if isinstance(p, str) else p
+
+
 def transition(new_phase: Phase) -> None:
-    current = Phase(STATE.phase) if isinstance(STATE.phase, str) else STATE.phase
+    current = _phase()
     allowed = VALID_TRANSITIONS.get(current, set())
     if new_phase not in allowed:
         raise StateError(
@@ -96,13 +105,20 @@ def _team_by_name(name: str) -> Team | None:
     return None
 
 
+def _team_of_captain(captain_id: str) -> Team | None:
+    for t in STATE.teams.values():
+        if t.captain_id == captain_id:
+            return t
+    return None
+
+
 # ============================================================
 # Handlers — eventi admin
 # ============================================================
 async def admin_configure(settings: Settings) -> None:
     """Imposta i parametri del quiz e passa in LOBBY."""
     async with _lock:
-        if STATE.phase not in (Phase.SETUP, Phase.LOBBY):
+        if _phase() not in (Phase.SETUP, Phase.LOBBY):
             raise StateError(
                 "Le impostazioni si possono modificare solo in SETUP o LOBBY"
             )
@@ -111,22 +127,23 @@ async def admin_configure(settings: Settings) -> None:
         for t in STATE.teams.values():
             if t.score == 0:
                 t.score = settings.initial_points
-        if STATE.phase == Phase.SETUP:
+        if _phase() == Phase.SETUP:
             transition(Phase.LOBBY)
 
 
 async def admin_start_quiz() -> None:
     """LOBBY -> READY -> TURN_CHOICE: sorteggia ordine, apre primo turno."""
     async with _lock:
-        if STATE.phase != Phase.LOBBY:
+        if _phase() != Phase.LOBBY:
             raise StateError("Lo start si puo fare solo dalla LOBBY")
         if len(STATE.teams) < 2:
             raise StateError("Servono almeno 2 squadre per iniziare")
         for t in STATE.teams.values():
             if t.captain_id is None:
                 raise StateError(f"La squadra {t.name} non ha un capitano")
+        if not STATE.questions_pool:
+            raise StateError("Il pool domande e vuoto: carica almeno una domanda")
 
-        # sorteggia l'ordine dei team
         order = list(STATE.teams.keys())
         random.shuffle(order)
         STATE.turn_order = order
@@ -138,12 +155,11 @@ async def admin_start_quiz() -> None:
 
 
 async def admin_next_turn() -> None:
-    """TURN_REVEAL -> TURN_CHOICE (incrementa turno) o -> FINISHED se ultimo round."""
+    """TURN_REVEAL -> TURN_CHOICE (incrementa turno) o -> FINISHED se esauriti round."""
     async with _lock:
-        if STATE.phase != Phase.TURN_REVEAL:
+        if _phase() != Phase.TURN_REVEAL:
             raise StateError("next_turn solo da TURN_REVEAL")
 
-        # quanti round abbiamo gia chiuso
         if len(STATE.rounds) >= STATE.settings.rounds:
             transition(Phase.FINISHED)
             return
@@ -151,6 +167,37 @@ async def admin_next_turn() -> None:
         STATE.current_turn_idx = (STATE.current_turn_idx + 1) % len(STATE.turn_order)
         _open_new_round()
         transition(Phase.TURN_CHOICE)
+
+
+async def admin_end_quiz() -> None:
+    """Termine forzato del quiz: ovunque ci si trovi, vai a FINISHED."""
+    async with _lock:
+        if _phase() == Phase.SETUP or _phase() == Phase.FINISHED:
+            return  # gia finito o non iniziato
+        STATE.phase = Phase.FINISHED
+        STATE.countdown_seconds_left = None
+
+
+async def admin_seed_demo_questions() -> None:
+    """Carica un piccolo pool di domande di test (per Tappa 3, finche
+    non c'e l'import Excel). Solo in SETUP/LOBBY."""
+    async with _lock:
+        if _phase() not in (Phase.SETUP, Phase.LOBBY):
+            raise StateError("Le domande si caricano solo in SETUP/LOBBY")
+        demo = _DEMO_QUESTIONS
+        for q in demo:
+            STATE.questions_pool[q.id] = q
+
+
+async def admin_reset() -> None:
+    """Reset totale dello stato (utile dopo FINISHED o per debug).
+
+    NB: gli altri moduli devono accedere come state.STATE (attribute lookup),
+    NON via 'from state import STATE' (binding fissato all'import).
+    """
+    async with _lock:
+        global STATE
+        STATE = GameState()
 
 
 def _open_new_round() -> None:
@@ -169,16 +216,12 @@ def _open_new_round() -> None:
 # ============================================================
 async def team_join(first_name: str, last_name: str, team_name: str) -> Player:
     """Aggiunge un giocatore. Se la squadra esiste, lo iscrive come membro.
-    Se la squadra e nuova, viene creata e il giocatore e capitano automatico.
-
-    Ritorna il Player creato (con id da memorizzare client-side).
-    """
+    Se la squadra e nuova, viene creata e il giocatore e capitano automatico."""
     async with _lock:
-        if STATE.phase not in (Phase.SETUP, Phase.LOBBY):
+        if _phase() not in (Phase.SETUP, Phase.LOBBY):
             raise StateError("I giocatori possono entrare solo in SETUP/LOBBY")
 
-        # se siamo ancora in SETUP, l'arrivo del primo giocatore apre la LOBBY
-        if STATE.phase == Phase.SETUP:
+        if _phase() == Phase.SETUP:
             transition(Phase.LOBBY)
 
         first_name = first_name.strip()
@@ -188,9 +231,10 @@ async def team_join(first_name: str, last_name: str, team_name: str) -> Player:
         if not first_name or not last_name or not team_name:
             raise StateError("Nome, cognome e squadra sono tutti obbligatori")
 
-        # squadra: esistente o nuova
         team = _team_by_name(team_name)
         if team is None:
+            if len(STATE.teams) >= 8:
+                raise StateError("Massimo 8 squadre")
             team = Team(
                 id=_new_id(),
                 name=team_name.upper(),
@@ -198,9 +242,6 @@ async def team_join(first_name: str, last_name: str, team_name: str) -> Player:
                 score=STATE.settings.initial_points,
             )
             STATE.teams[team.id] = team
-
-        if len(STATE.teams) > 8:
-            raise StateError("Massimo 8 squadre")
 
         player = Player(
             id=_new_id(),
@@ -210,7 +251,6 @@ async def team_join(first_name: str, last_name: str, team_name: str) -> Player:
         )
         STATE.players[player.id] = player
 
-        # primo giocatore della squadra: diventa capitano automatico
         if team.captain_id is None:
             team.captain_id = player.id
 
@@ -220,7 +260,7 @@ async def team_join(first_name: str, last_name: str, team_name: str) -> Player:
 async def team_promote_captain(player_id: str) -> None:
     """Cede la fascia di capitano a un altro membro della stessa squadra."""
     async with _lock:
-        if STATE.phase not in (Phase.LOBBY,):
+        if _phase() not in (Phase.LOBBY,):
             raise StateError("La fascia di capitano si cambia solo in LOBBY")
         player = STATE.players.get(player_id)
         if player is None or player.team_id is None:
@@ -229,14 +269,41 @@ async def team_promote_captain(player_id: str) -> None:
         team.captain_id = player.id
 
 
+async def team_vote(player_id: str, option: Letter) -> None:
+    """Voto del membro non-capitano: si registra nel round corrente.
+    Visibile (a tutti per ora; in tappa 4 sara routing scoped al solo capitano)."""
+    async with _lock:
+        if _phase() != Phase.TURN_QUESTION:
+            raise StateError("I voti dei membri solo durante TURN_QUESTION")
+        round_ = STATE.current_round
+        if round_ is None:
+            raise StateError("Nessun round in corso")
+        player = STATE.players.get(player_id)
+        if player is None:
+            raise StateError("Giocatore sconosciuto")
+        # solo i membri non-capitani della squadra che deve rispondere votano
+        target = round_.target
+        if target == "open":
+            # open: tutti i membri (non capitani) di tutte le squadre tranne chi pone
+            if player.team_id == round_.asking_team_id:
+                raise StateError("Chi ha posto la domanda non puo votare")
+        else:
+            if player.team_id != target:
+                raise StateError("Solo la squadra che deve rispondere puo votare")
+        team = STATE.teams.get(player.team_id) if player.team_id else None
+        if team and team.captain_id == player_id:
+            raise StateError("Il capitano risponde, non vota")
+        round_.member_votes[player_id] = option
+
+
 # ============================================================
 # Handlers — eventi capitano (durante il turno)
 # ============================================================
-async def captain_choose_question(captain_id: str, question_id: int, bet: int, target: str) -> None:
-    """TURN_CHOICE -> TURN_QUESTION: il capitano della squadra di turno
-    sceglie domanda + puntata + target ('open' o team_id avversario)."""
+async def captain_choose_question(captain_id: str, question_id: int, bet: int, target: str) -> int:
+    """TURN_CHOICE -> TURN_QUESTION: capitano sceglie domanda + puntata + target.
+    Ritorna i secondi totali del countdown calcolati dalla difficolta."""
     async with _lock:
-        if STATE.phase != Phase.TURN_CHOICE:
+        if _phase() != Phase.TURN_CHOICE:
             raise StateError("Scelta domanda solo in TURN_CHOICE")
 
         round_ = STATE.current_round
@@ -249,7 +316,8 @@ async def captain_choose_question(captain_id: str, question_id: int, bet: int, t
 
         if question_id in STATE.used_question_ids:
             raise StateError("Domanda gia usata in questo quiz")
-        if question_id not in STATE.questions_pool:
+        question = STATE.questions_pool.get(question_id)
+        if question is None:
             raise StateError(f"Domanda {question_id} non presente nel pool")
 
         s = STATE.settings
@@ -263,56 +331,194 @@ async def captain_choose_question(captain_id: str, question_id: int, bet: int, t
         if target == round_.asking_team_id:
             raise StateError("Non puoi rivolgere la domanda alla tua stessa squadra")
 
+        seconds = s.seconds_for_difficulty(question.difficulty)
+
         round_.question_id = question_id
         round_.bet = bet
         round_.target = target
+        round_.seconds_total = seconds
         STATE.used_question_ids.add(question_id)
-        STATE.countdown_seconds_left = s.seconds
+        STATE.countdown_seconds_left = seconds
 
         transition(Phase.TURN_QUESTION)
+        return seconds
 
 
 async def captain_answer(captain_id: str, option: Letter) -> None:
     """TURN_QUESTION -> TURN_REVEAL: il primo capitano che risponde blocca.
-    NB: la logica completa di scoring (corretto/sbagliato, distribuzione
-    punti per 'aperta a tutti' o squadra specifica) arrivera in tappa 3.
-    Qui per ora si registra solo la risposta e si passa a REVEAL.
-    """
+    Applica scoring corretto in base a target e correttezza."""
     async with _lock:
-        if STATE.phase != Phase.TURN_QUESTION:
+        if _phase() != Phase.TURN_QUESTION:
             raise StateError("Risposta solo in TURN_QUESTION")
         round_ = STATE.current_round
         if round_ is None or round_.answer_letter is not None:
             raise StateError("Round non valido o gia risposto")
 
-        # trova la squadra del capitano che risponde
-        answering_team_id = None
-        for t in STATE.teams.values():
-            if t.captain_id == captain_id:
-                answering_team_id = t.id
-                break
-        if answering_team_id is None:
+        team = _team_of_captain(captain_id)
+        if team is None:
             raise StateError("Solo i capitani possono rispondere")
+        if team.id == round_.asking_team_id:
+            raise StateError("Non puoi rispondere a una domanda che ha posto la tua squadra")
 
-        # validazione target: se target e una squadra specifica, solo quella puo rispondere
-        if round_.target != "open" and round_.target != answering_team_id:
+        # validazione target: se la domanda e indirizzata a una squadra specifica,
+        # solo quella puo rispondere
+        if round_.target != "open" and round_.target != team.id:
             raise StateError("Questa domanda e indirizzata a un'altra squadra")
 
-        round_.answer_letter = option
-        round_.answer_team_id = answering_team_id
-        STATE.countdown_seconds_left = None
-
-        # scoring placeholder (Tappa 3 lo riempira correttamente)
         question = STATE.questions_pool[round_.question_id]
         is_correct = option == question.correct
-        bet = round_.bet or 0
-        if is_correct:
-            STATE.teams[answering_team_id].score += bet
-            STATE.teams[round_.asking_team_id].score -= bet
-            round_.points_delta = {answering_team_id: +bet, round_.asking_team_id: -bet}
-        else:
-            STATE.teams[answering_team_id].score -= bet
-            STATE.teams[round_.asking_team_id].score += bet
-            round_.points_delta = {answering_team_id: -bet, round_.asking_team_id: +bet}
+        round_.answer_letter = option
+        round_.answer_team_id = team.id
+        round_.is_correct = is_correct
+        STATE.countdown_seconds_left = None
 
+        _apply_scoring_for_answer(round_, team.id, is_correct)
         transition(Phase.TURN_REVEAL)
+
+
+# ============================================================
+# Countdown / timeout
+# ============================================================
+async def tick_countdown() -> str:
+    """Chiamato dall'orchestrator (ws.py) ogni 1s in TURN_QUESTION.
+    Ritorna:
+      - "tick"    : decrementato, bisogna fare broadcast countdown/tick
+      - "timeout" : countdown a 0, applicato scoring di timeout, transition in REVEAL
+                    bisogna fare broadcast state/full
+      - "stopped" : fase diversa da TURN_QUESTION, fermarsi (no broadcast)
+    """
+    async with _lock:
+        if _phase() != Phase.TURN_QUESTION:
+            return "stopped"
+        if STATE.countdown_seconds_left is None:
+            return "stopped"
+        STATE.countdown_seconds_left -= 1
+        if STATE.countdown_seconds_left > 0:
+            return "tick"
+        STATE.countdown_seconds_left = 0
+        round_ = STATE.current_round
+        if round_ is None:
+            return "stopped"
+        round_.timed_out = True
+        _apply_scoring_for_timeout(round_)
+        STATE.countdown_seconds_left = None
+        transition(Phase.TURN_REVEAL)
+        return "timeout"
+
+
+# ============================================================
+# Scoring
+# ============================================================
+def _apply_scoring_for_answer(round_: Round, answering_team_id: str, is_correct: bool) -> None:
+    """Applica i punti dopo che una squadra ha risposto (corretto/sbagliato)."""
+    bet = round_.bet or 0
+    asking_id = round_.asking_team_id
+    delta: dict[str, int] = {}
+
+    if round_.target == "open":
+        # aperta a tutti: chi risponde
+        if is_correct:
+            #  vince bet -> chi ha posto perde bet
+            delta[answering_team_id] = +bet
+            delta[asking_id] = -bet
+        else:
+            #  perde bet -> chi ha posto vince bet
+            delta[answering_team_id] = -bet
+            delta[asking_id] = +bet
+    else:
+        # target: la squadra X (la stessa che ha risposto, validato a monte)
+        if is_correct:
+            # X vince bet, chi ha posto perde bet
+            delta[answering_team_id] = +bet
+            delta[asking_id] = -bet
+        else:
+            # X perde bet, chi ha posto vince bet
+            delta[answering_team_id] = -bet
+            delta[asking_id] = +bet
+
+    _commit_delta(round_, delta)
+
+
+def _apply_scoring_for_timeout(round_: Round) -> None:
+    """Applica i punti se il countdown scade senza risposta.
+
+    Regole:
+    - target = team X: X perde bet, chi ha posto vince bet
+    - target = open: tutte le squadre (tranne chi pone) perdono bet/(N-1)
+                     (troncato all'unita); il totale va a chi pone
+    """
+    bet = round_.bet or 0
+    asking_id = round_.asking_team_id
+    delta: dict[str, int] = {}
+
+    if round_.target == "open":
+        others = [tid for tid in STATE.teams if tid != asking_id]
+        n = len(others)
+        if n == 0:
+            return
+        share = bet // n  # troncato come da specifica
+        total_to_asker = 0
+        for tid in others:
+            delta[tid] = -share
+            total_to_asker += share
+        delta[asking_id] = +total_to_asker
+    else:
+        target = round_.target
+        delta[target] = -bet
+        delta[asking_id] = +bet
+
+    _commit_delta(round_, delta)
+
+
+def _commit_delta(round_: Round, delta: dict[str, int]) -> None:
+    """Applica delta ai score delle squadre e lo registra nel round."""
+    round_.points_delta.clear()
+    for team_id, d in delta.items():
+        if team_id in STATE.teams:
+            STATE.teams[team_id].score += d
+        round_.points_delta[team_id] = d
+
+
+# ============================================================
+# Demo seed (Tappa 3, finche non c'e l'import Excel)
+# ============================================================
+def _q(id_: int, lecture: str, topic: str, text: str, opts: list[str], correct: str, difficulty: int) -> Question:
+    options = [QuestionOption(letter=l, text=t) for l, t in zip(["A", "B", "C", "D"], opts)]
+    return Question(
+        id=id_, lecture=lecture, topic=topic, text=text,
+        options=options, correct=correct, difficulty=difficulty,
+    )
+
+
+_DEMO_QUESTIONS = [
+    _q(1, "L11", "CAD", "Che cosa stabilisce l'art. 64-bis del CAD per l'accesso ai servizi digitali della PA?",
+       ["Accesso libero senza autenticazione",
+        "Accesso tramite SPID, CIE o CNS come unici strumenti consentiti",
+        "Accesso libero ma con tracciamento IP",
+        "Accesso solo per chi ha PEC attiva"], "B", 2),
+    _q(2, "L11", "SPID", "A cosa serve SPID di livello 2?",
+       ["Servizi a basso rischio anonimi",
+        "Accesso con username + password + OTP",
+        "Firma digitale qualificata",
+        "Solo identificazione cartacea"], "B", 1),
+    _q(3, "L09", "GDPR", "Quando il titolare puo trasferire dati verso un Paese terzo senza decisione di adeguatezza?",
+       ["Mai",
+        "Sempre, basta il consenso",
+        "Con garanzie adeguate (clausole tipo, BCR) o deroghe",
+        "Solo dentro l'UE"], "C", 3),
+    _q(4, "L05", "eIDAS", "Quale firma elettronica garantisce l'identificazione univoca del firmatario?",
+       ["Firma elettronica semplice",
+        "Firma elettronica avanzata",
+        "Firma elettronica qualificata",
+        "Firma autografa digitalizzata"], "C", 2),
+    _q(5, "L13", "PDND", "Qual e la differenza tra Catalogo API e Voucher nella PDND?",
+       ["Sono la stessa cosa",
+        "Catalogo elenca le API, Voucher autorizza l'accesso",
+        "Catalogo e per i privati, Voucher per la PA",
+        "Voucher elenca i prezzi"], "B", 2),
+    _q(6, "L02", "GAN", "In una GAN, qual e il ruolo del generatore?",
+       ["Classificare immagini reali",
+        "Produrre dati falsi che ingannino il discriminatore",
+        "Solo addestrare il discriminatore",
+        "Etichettare i dataset"], "B", 3),
+]

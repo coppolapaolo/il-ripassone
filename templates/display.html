@@ -9,15 +9,30 @@
     <span class="display-font text-sm uppercase" style="color:var(--coral)">📺 Display</span>
   </header>
 
-  <!-- Phase banner -->
-  <section class="toon p-5 text-center">
-    <div class="display-font text-xs uppercase mb-1" style="color:var(--navy-soft)">Fase corrente</div>
-    <div class="display-font text-5xl" x-text="state?.phase || '…'"></div>
-    <div class="text-sm mt-2" style="color:var(--navy-soft)">
-      Round <b x-text="state?.rounds?.length || 0"></b> di <b x-text="state?.settings?.rounds || '?'"></b>
-      · Squadre: <b x-text="Object.keys(state?.teams || {}).length"></b>
-      · Giocatori: <b x-text="Object.keys(state?.players || {}).length"></b>
+  <!-- Phase banner + countdown live -->
+  <section class="toon p-5 grid items-center gap-4" style="grid-template-columns: 1fr auto;">
+    <div class="text-center">
+      <div class="display-font text-xs uppercase mb-1" style="color:var(--navy-soft)">Fase corrente</div>
+      <div class="display-font text-5xl" x-text="state?.phase || '…'"></div>
+      <div class="text-sm mt-2" style="color:var(--navy-soft)">
+        Round <b x-text="state?.rounds?.length || 0"></b> di <b x-text="state?.settings?.rounds || '?'"></b>
+        · Squadre: <b x-text="Object.keys(state?.teams || {}).length"></b>
+        · Giocatori: <b x-text="Object.keys(state?.players || {}).length"></b>
+      </div>
     </div>
+    <!-- countdown live -->
+    <template x-if="state?.phase === 'turn_question' && countdown !== null">
+      <div class="text-center">
+        <div class="display-font text-xs uppercase mb-1" style="color:var(--navy-soft)">Tempo</div>
+        <div class="display-font tabular-nums leading-none"
+             :style="`font-size:104px; ${countdown <= 5 ? 'color:var(--coral)' : (countdown <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy)')}`"
+             x-text="countdown"></div>
+        <div class="text-xs mt-1" style="color:var(--navy-soft)">
+          su <span x-text="state?.rounds?.at(-1)?.seconds_total"></span>s
+          (diff. <span x-text="state?.questions_pool?.[state?.rounds?.at(-1)?.question_id]?.difficulty"></span>)
+        </div>
+      </div>
+    </template>
   </section>
 
   <!-- Squadre live -->
