@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<title>Quizzone — Display pubblico</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .display-font { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.02em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .bg-stage {
+    background:
+      radial-gradient(ellipse at top, rgba(56,189,248,0.15), transparent 60%),
+      radial-gradient(ellipse at bottom, rgba(250,204,21,0.10), transparent 60%),
+      linear-gradient(180deg, #050b1f 0%, #0a1330 50%, #050b1f 100%);
+  }
+  .stage-grain::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: overlay; opacity: 0.5;
+  }
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+  }
+  .glow-gold { box-shadow: 0 0 60px -10px rgba(250,204,21,0.45), inset 0 0 0 1px rgba(250,204,21,0.4); }
+  .glow-blue { box-shadow: 0 0 80px -10px rgba(56,189,248,0.5), inset 0 0 0 1px rgba(56,189,248,0.4); }
+  .glow-green { box-shadow: 0 0 80px -10px rgba(34,197,94,0.6), inset 0 0 0 1px rgba(34,197,94,0.5); }
+
+  /* Countdown SVG ring */
+  .ring-track { stroke: rgba(255,255,255,0.08); }
+  .ring-progress { stroke: #38bdf8; transition: stroke-dashoffset 1s linear, stroke 0.3s; filter: drop-shadow(0 0 10px rgba(56,189,248,0.7)); }
+  .ring-progress.warn { stroke: #facc15; filter: drop-shadow(0 0 10px rgba(250,204,21,0.7)); }
+  .ring-progress.danger { stroke: #ef4444; filter: drop-shadow(0 0 12px rgba(239,68,68,0.9)); animation: pulse 0.8s ease-in-out infinite; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  @keyframes scoreUp {
+    0% { transform: translateY(0) scale(1); color: #fff; }
+    35% { transform: translateY(-12px) scale(1.4); color: #4ade80; }
+    100% { transform: translateY(0) scale(1); color: #fff; }
+  }
+  .score-bump { animation: scoreUp 1.3s ease-out; }
+
+  @keyframes revealFlash {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.0); }
+    30% { box-shadow: 0 0 0 18px rgba(34,197,94,0.55), 0 0 80px 0 rgba(34,197,94,0.6); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.0); }
+  }
+  .reveal-correct { animation: revealFlash 1.4s ease-out; background: linear-gradient(180deg, rgba(34,197,94,0.25), rgba(34,197,94,0.10)); border-color: rgba(34,197,94,0.7) !important; }
+  .reveal-wrong { background: linear-gradient(180deg, rgba(239,68,68,0.25), rgba(239,68,68,0.10)); border-color: rgba(239,68,68,0.7) !important; opacity: 0.7; }
+
+  .team-bar { transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+
+  /* Buzzer indicator */
+  @keyframes buzz { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  .buzz { animation: buzz 0.6s ease-in-out infinite; }
+</style>
+</head>
+<body class="bg-stage stage-grain text-white min-h-screen overflow-hidden">
+
+<div x-data="display()" class="min-h-screen flex flex-col p-6 gap-6 relative">
+
+  <!-- HEADER: titolo + round + stato -->
+  <header class="flex items-center justify-between">
+    <div class="flex items-baseline gap-4">
+      <h1 class="display-font text-5xl tracking-wider bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-600 bg-clip-text text-transparent">
+        QUIZZONE
+      </h1>
+      <span class="text-slate-400 text-sm uppercase tracking-widest">DIPA · L19 · 2026</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="glass px-4 py-2 rounded-full text-sm flex items-center gap-2">
+        <span class="text-slate-400">Round</span>
+        <span class="display-font text-2xl text-yellow-300" x-text="round"></span>
+        <span class="text-slate-500">/</span>
+        <span class="text-slate-300" x-text="totalRounds"></span>
+      </div>
+      <button @click="togglePhase()" class="glass px-3 py-2 rounded-full text-xs text-slate-400 hover:text-white">
+        ⇄ <span x-text="phase"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- LEADERBOARD: punteggi squadre -->
+  <section class="grid grid-cols-4 gap-3">
+    <template x-for="(t, idx) in teams" :key="t.id">
+      <div class="glass rounded-2xl p-4 relative overflow-hidden"
+           :class="t.id === askingTeam.id ? 'glow-gold' : (t.id === answeringTeam.id ? 'glow-blue' : '')">
+        <!-- bar di sfondo -->
+        <div class="absolute inset-0 opacity-15 team-bar"
+             :style="`background: linear-gradient(90deg, ${t.color} 0%, ${t.color} ${barPct(t.score)}%, transparent ${barPct(t.score)}%); width: 100%;`"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+              <span class="display-font text-2xl text-slate-500" x-text="'#' + (idx+1)"></span>
+              <span class="display-font text-2xl tracking-wide" x-text="t.name"></span>
+            </div>
+            <template x-if="t.id === askingTeam.id">
+              <span class="text-[10px] uppercase tracking-widest bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded">Pone</span>
+            </template>
+            <template x-if="t.id === answeringTeam.id">
+              <span class="text-[10px] uppercase tracking-widest bg-sky-400/20 text-sky-300 px-2 py-0.5 rounded buzz">Risponde</span>
+            </template>
+          </div>
+          <div class="flex items-end gap-2">
+            <span class="display-font text-5xl tabular-nums" :class="t.bumped && 'score-bump'" x-text="t.score"></span>
+            <span class="text-slate-500 text-xs mb-1.5">pt</span>
+          </div>
+          <div class="text-[11px] text-slate-400 mt-1 truncate">
+            <span x-text="t.captain"></span><span class="text-slate-600"> · </span><span x-text="t.members + ' membri'"></span>
+          </div>
+        </div>
+      </div>
+    </template>
+  </section>
+
+  <!-- STAGE: domanda + opzioni + countdown -->
+  <main class="flex-1 grid grid-cols-12 gap-6 items-stretch">
+
+    <!-- Sinistra: meta domanda + chi pone -->
+    <aside class="col-span-3 flex flex-col gap-4">
+      <div class="glass rounded-2xl p-5">
+        <div class="text-[11px] uppercase tracking-widest text-slate-400 mb-2">Pone la domanda</div>
+        <div class="display-font text-3xl" x-text="askingTeam.name" :style="`color: ${askingTeam.color}`"></div>
+        <div class="text-xs text-slate-400 mt-1">
+          Capitano: <span class="text-slate-200" x-text="askingTeam.captain"></span>
+        </div>
+      </div>
+      <div class="glass rounded-2xl p-5">
+        <div class="text-[11px] uppercase tracking-widest text-slate-400 mb-2">Risponde</div>
+        <template x-if="question.target === 'open'">
+          <div>
+            <div class="display-font text-3xl text-sky-300">APERTA A TUTTI</div>
+            <div class="text-xs text-slate-400 mt-1">Primo capitano che risponde, blocca le altre squadre</div>
+          </div>
+        </template>
+        <template x-if="question.target !== 'open'">
+          <div>
+            <div class="display-font text-3xl" :style="`color: ${answeringTeam.color}`" x-text="answeringTeam.name"></div>
+            <div class="text-xs text-slate-400 mt-1">Capitano: <span class="text-slate-200" x-text="answeringTeam.captain"></span></div>
+          </div>
+        </template>
+      </div>
+      <div class="glass rounded-2xl p-5 mt-auto">
+        <div class="text-[11px] uppercase tracking-widest text-slate-400 mb-2">Puntata</div>
+        <div class="display-font text-6xl text-yellow-300 leading-none" x-text="question.bet"></div>
+        <div class="text-xs text-slate-400 mt-1">punti in palio</div>
+      </div>
+      <div class="glass rounded-2xl px-5 py-3 flex items-center justify-between">
+        <span class="text-[11px] uppercase tracking-widest text-slate-400">Lezione</span>
+        <span class="mono text-sm text-slate-200" x-text="question.lecture"></span>
+      </div>
+      <div class="glass rounded-2xl px-5 py-3 flex items-center justify-between">
+        <span class="text-[11px] uppercase tracking-widest text-slate-400">Difficoltà</span>
+        <span class="text-sm">
+          <template x-for="i in 3"><span :class="i <= question.difficulty ? 'text-yellow-300' : 'text-slate-700'">★</span></template>
+        </span>
+      </div>
+    </aside>
+
+    <!-- Centro: domanda + opzioni -->
+    <section class="col-span-6 flex flex-col gap-5">
+      <div class="glass rounded-3xl p-8 flex-shrink-0">
+        <div class="text-[11px] uppercase tracking-widest text-slate-400 mb-3">Domanda</div>
+        <p class="text-3xl font-medium leading-snug" x-text="question.text"></p>
+      </div>
+      <div class="grid grid-cols-2 gap-4 flex-1">
+        <template x-for="opt in question.options" :key="opt.letter">
+          <div class="glass rounded-2xl p-6 flex items-center gap-5 transition-all"
+               :class="phase === 'reveal' && (opt.letter === question.correct ? 'reveal-correct' : 'reveal-wrong')">
+            <div class="display-font text-6xl w-16 text-center"
+                 :class="phase === 'reveal' && opt.letter === question.correct ? 'text-green-400' : 'text-slate-500'"
+                 x-text="opt.letter"></div>
+            <div class="text-xl leading-snug" x-text="opt.text"></div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- Destra: countdown -->
+    <aside class="col-span-3 flex flex-col items-center justify-start">
+      <div class="text-[11px] uppercase tracking-widest text-slate-400 mb-3">Tempo rimanente</div>
+      <div class="relative w-72 h-72">
+        <svg class="w-full h-full -rotate-90" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="90" stroke-width="8" fill="none" class="ring-track"/>
+          <circle cx="100" cy="100" r="90" stroke-width="10" fill="none" stroke-linecap="round"
+                  class="ring-progress" :class="ringClass()"
+                  stroke-dasharray="565.48" :stroke-dashoffset="565.48 * (1 - secondsLeft/totalSeconds)"/>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span class="display-font tabular-nums text-8xl" :class="secondsLeft <= 5 ? 'text-red-400' : (secondsLeft <= 10 ? 'text-yellow-300' : 'text-white')" x-text="secondsLeft"></span>
+          <span class="text-xs uppercase tracking-widest text-slate-400 mt-1">secondi</span>
+        </div>
+      </div>
+      <!-- mini controls (mockup only) -->
+      <div class="mt-8 flex flex-col gap-2 w-full max-w-xs">
+        <button @click="reveal()" class="glass rounded-xl px-4 py-3 text-sm hover:bg-white/10">⏎ Mostra risposta</button>
+        <button @click="reset()" class="glass rounded-xl px-4 py-3 text-sm hover:bg-white/10">↻ Reset countdown</button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- FOOTER ticker -->
+  <footer class="glass rounded-full px-6 py-3 flex items-center justify-between text-xs text-slate-400">
+    <span>quizzone.local · <span class="mono text-slate-300">https://abc1-23.ngrok-free.app</span></span>
+    <span class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+      <span>16 dispositivi connessi</span>
+    </span>
+    <span class="mono text-slate-500" x-text="`${question.lecture} · ${question.topic}`"></span>
+  </footer>
+
+</div>
+
+<script>
+function display() {
+  return {
+    phase: 'question', // question | reveal
+    round: 3, totalRounds: 12,
+    totalSeconds: 30, secondsLeft: 18,
+    askingTeam: { id: 't1', name: 'I Cybernauti', color: '#facc15', captain: 'Marta Rossi' },
+    answeringTeam: { id: 't3', name: 'Le Algoritmiche', color: '#38bdf8', captain: 'Luca Bianchi' },
+    teams: [
+      { id: 't3', name: 'Le Algoritmiche', color: '#38bdf8', score: 220, captain: 'Luca Bianchi', members: 4, bumped: true },
+      { id: 't1', name: 'I Cybernauti',    color: '#facc15', score: 185, captain: 'Marta Rossi',  members: 3, bumped: false },
+      { id: 't2', name: 'Bit & Bot',       color: '#a78bfa', score: 140, captain: 'Sara Verdi',   members: 4, bumped: false },
+      { id: 't4', name: 'I Pixelati',      color: '#fb7185', score:  95, captain: 'Davide Neri',  members: 3, bumped: false },
+    ],
+    question: {
+      lecture: 'L11', topic: 'CAD · art. 64-bis', difficulty: 2, bet: 50, target: 'open',
+      text: "Quale principio prevede l'art. 64-bis del CAD per l'accesso ai servizi digitali della PA?",
+      options: [
+        { letter: 'A', text: 'Accesso libero senza autenticazione per tutti i cittadini' },
+        { letter: 'B', text: 'Accesso tramite SPID, CIE o CNS come unici strumenti consentiti' },
+        { letter: 'C', text: 'Accesso libero ma con tracciamento obbligatorio degli IP' },
+        { letter: 'D', text: 'Accesso solo per chi ha una PEC attiva' },
+      ],
+      correct: 'B',
+    },
+    init() {
+      // simulate countdown for the mockup
+      this._timer = setInterval(() => {
+        if (this.phase === 'question' && this.secondsLeft > 0) this.secondsLeft--;
+      }, 1000);
+    },
+    togglePhase() { this.phase = this.phase === 'question' ? 'reveal' : 'question'; },
+    reveal() { this.phase = 'reveal'; },
+    reset() { this.secondsLeft = this.totalSeconds; this.phase = 'question'; },
+    ringClass() {
+      if (this.secondsLeft <= 5) return 'danger';
+      if (this.secondsLeft <= 10) return 'warn';
+      return '';
+    },
+    barPct(score) {
+      const max = Math.max(...this.teams.map(t => t.score), 1);
+      return Math.round((score / max) * 100);
+    },
+  }
+}
+</script>
+</body>
+</html>

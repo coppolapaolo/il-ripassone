@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<title>Quizzone — Capitano · Rispondi</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .display-font { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.02em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .bg-stage {
+    background:
+      radial-gradient(ellipse at top, rgba(56,189,248,0.12), transparent 60%),
+      linear-gradient(180deg, #050b1f 0%, #0a1330 60%, #050b1f 100%);
+  }
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+  }
+  .opt-btn {
+    transition: all 0.2s;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.10);
+  }
+  .opt-btn:hover { transform: translateY(-2px); border-color: rgba(56,189,248,0.5); box-shadow: 0 10px 30px -10px rgba(56,189,248,0.4); }
+  .opt-btn.selected {
+    background: linear-gradient(180deg, rgba(56,189,248,0.20), rgba(56,189,248,0.05));
+    border-color: rgba(56,189,248,0.8);
+    box-shadow: inset 0 0 0 1px rgba(56,189,248,0.5), 0 0 30px -5px rgba(56,189,248,0.6);
+  }
+
+  /* countdown */
+  .ring-track { stroke: rgba(255,255,255,0.08); }
+  .ring-progress { stroke: #38bdf8; transition: stroke-dashoffset 1s linear, stroke 0.3s; filter: drop-shadow(0 0 8px rgba(56,189,248,0.7)); }
+  .ring-progress.warn { stroke: #facc15; filter: drop-shadow(0 0 8px rgba(250,204,21,0.7)); }
+  .ring-progress.danger { stroke: #ef4444; filter: drop-shadow(0 0 12px rgba(239,68,68,0.9)); animation: pulse 0.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+  /* big answer button */
+  .answer-cta {
+    background: linear-gradient(180deg, #facc15 0%, #eab308 100%);
+    color: #1e1b4b;
+    box-shadow: 0 12px 40px -8px rgba(250,204,21,0.55), inset 0 -3px 0 rgba(0,0,0,0.18);
+    transition: all 0.15s;
+  }
+  .answer-cta:hover { transform: translateY(-2px); box-shadow: 0 18px 50px -8px rgba(250,204,21,0.7), inset 0 -3px 0 rgba(0,0,0,0.18); }
+  .answer-cta:active { transform: translateY(1px); }
+  .answer-cta:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* member vote chip */
+  .vote-chip { transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+
+  @keyframes flashRed {
+    0%,100% { background-color: rgba(239,68,68,0.0); }
+    50% { background-color: rgba(239,68,68,0.18); }
+  }
+  .flash-danger { animation: flashRed 0.8s ease-in-out infinite; }
+</style>
+</head>
+<body class="bg-stage text-white min-h-screen">
+
+<div x-data="capitano()" class="min-h-screen max-w-3xl mx-auto px-4 py-5 flex flex-col gap-4"
+     :class="secondsLeft <= 5 && 'flash-danger'">
+
+  <!-- HEADER squadra -->
+  <header class="glass rounded-2xl p-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center display-font text-2xl"
+           :style="`background: ${team.color}20; color: ${team.color}; border: 1px solid ${team.color}80`">
+        <span x-text="team.name[0]"></span>
+      </div>
+      <div>
+        <div class="display-font text-2xl leading-none" x-text="team.name"></div>
+        <div class="text-xs text-slate-400 mt-1">
+          <span class="bg-yellow-400/20 text-yellow-300 px-1.5 py-0.5 rounded uppercase tracking-wider text-[10px] mr-1">Capitano</span>
+          <span x-text="me.name"></span>
+        </div>
+      </div>
+    </div>
+    <div class="text-right">
+      <div class="text-[10px] uppercase tracking-widest text-slate-400">Punteggio</div>
+      <div class="display-font text-3xl text-yellow-300 leading-none" x-text="team.score"></div>
+    </div>
+  </header>
+
+  <!-- META domanda -->
+  <div class="grid grid-cols-3 gap-2">
+    <div class="glass rounded-xl px-3 py-2 text-center">
+      <div class="text-[10px] uppercase tracking-widest text-slate-400">Da</div>
+      <div class="text-sm font-medium" :style="`color: ${question.askedBy.color}`" x-text="question.askedBy.name"></div>
+    </div>
+    <div class="glass rounded-xl px-3 py-2 text-center">
+      <div class="text-[10px] uppercase tracking-widest text-slate-400">In palio</div>
+      <div class="display-font text-2xl text-yellow-300 leading-none" x-text="question.bet"></div>
+    </div>
+    <div class="glass rounded-xl px-3 py-2 text-center">
+      <div class="text-[10px] uppercase tracking-widest text-slate-400">Lezione</div>
+      <div class="text-sm mono" x-text="question.lecture"></div>
+    </div>
+  </div>
+
+  <!-- COUNTDOWN compatto -->
+  <div class="glass rounded-2xl p-4 flex items-center gap-4">
+    <div class="relative w-20 h-20 flex-shrink-0">
+      <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" stroke-width="6" fill="none" class="ring-track"/>
+        <circle cx="50" cy="50" r="45" stroke-width="7" fill="none" stroke-linecap="round"
+                class="ring-progress" :class="ringClass()"
+                stroke-dasharray="282.74" :stroke-dashoffset="282.74 * (1 - secondsLeft/totalSeconds)"/>
+      </svg>
+      <div class="absolute inset-0 flex items-center justify-center">
+        <span class="display-font tabular-nums text-3xl"
+              :class="secondsLeft <= 5 ? 'text-red-400' : (secondsLeft <= 10 ? 'text-yellow-300' : 'text-white')"
+              x-text="secondsLeft"></span>
+      </div>
+    </div>
+    <div class="flex-1">
+      <div class="text-[10px] uppercase tracking-widest text-slate-400">Tempo per rispondere</div>
+      <div class="text-sm text-slate-300 mt-1">
+        <template x-if="question.target === 'open'">
+          <span><span class="text-sky-300 font-medium">Aperta a tutti</span> · primo che risponde blocca</span>
+        </template>
+        <template x-if="question.target === 'me'">
+          <span>Domanda <span class="text-yellow-300 font-medium">indirizzata a te</span></span>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOMANDA -->
+  <div class="glass rounded-2xl p-5">
+    <div class="text-[10px] uppercase tracking-widest text-slate-400 mb-2">Domanda</div>
+    <p class="text-lg leading-snug" x-text="question.text"></p>
+  </div>
+
+  <!-- OPZIONI -->
+  <div class="grid grid-cols-1 gap-2.5">
+    <template x-for="opt in question.options" :key="opt.letter">
+      <button @click="selected = opt.letter; submitted = false"
+              class="opt-btn rounded-xl p-4 text-left flex items-start gap-4 group"
+              :class="selected === opt.letter && 'selected'">
+        <div class="display-font text-3xl w-10 text-center flex-shrink-0"
+             :class="selected === opt.letter ? 'text-sky-300' : 'text-slate-500'"
+             x-text="opt.letter"></div>
+        <div class="flex-1">
+          <div class="text-base leading-snug" x-text="opt.text"></div>
+          <!-- voti compagni -->
+          <div class="flex flex-wrap gap-1.5 mt-2.5" x-show="votesFor(opt.letter).length">
+            <template x-for="v in votesFor(opt.letter)" :key="v.id">
+              <span class="vote-chip text-[11px] bg-white/10 border border-white/10 rounded-full px-2 py-0.5 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span x-text="v.name"></span>
+              </span>
+            </template>
+          </div>
+        </div>
+        <template x-if="votesFor(opt.letter).length">
+          <div class="display-font text-xl text-emerald-300 mt-1" x-text="votesFor(opt.letter).length"></div>
+        </template>
+      </button>
+    </template>
+  </div>
+
+  <!-- CTA risposta -->
+  <button class="answer-cta rounded-2xl py-5 display-font text-3xl tracking-wider mt-2"
+          :disabled="!selected || submitted"
+          @click="submit()">
+    <span x-show="!submitted">RISPONDI ▸ <span x-text="selected || '—'"></span></span>
+    <span x-show="submitted">⏳ INVIATA · ATTENDI…</span>
+  </button>
+
+  <!-- BANNER membri votano -->
+  <div class="glass rounded-xl px-4 py-3 text-xs text-slate-400 flex items-center justify-between">
+    <span><span class="display-font text-base text-white" x-text="memberVotes.length"></span><span class="text-slate-500">/</span><span x-text="team.memberCount - 1"></span> compagni hanno votato</span>
+    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> aggiornamento live</span>
+  </div>
+
+</div>
+
+<script>
+function capitano() {
+  return {
+    me: { id: 'p1', name: 'Marta Rossi' },
+    team: { name: 'I Cybernauti', color: '#facc15', score: 185, memberCount: 4 },
+    selected: null, submitted: false,
+    totalSeconds: 30, secondsLeft: 14,
+    memberVotes: [
+      { id: 'p2', name: 'Andrea',  option: 'B' },
+      { id: 'p3', name: 'Giulia',  option: 'B' },
+      { id: 'p4', name: 'Tommaso', option: 'D' },
+    ],
+    question: {
+      lecture: 'L11', bet: 50, target: 'open',
+      askedBy: { name: 'Le Algoritmiche', color: '#38bdf8' },
+      text: "Quale principio prevede l'art. 64-bis del CAD per l'accesso ai servizi digitali della PA?",
+      options: [
+        { letter: 'A', text: 'Accesso libero senza autenticazione per tutti i cittadini' },
+        { letter: 'B', text: 'Accesso tramite SPID, CIE o CNS come unici strumenti consentiti' },
+        { letter: 'C', text: 'Accesso libero ma con tracciamento obbligatorio degli IP' },
+        { letter: 'D', text: 'Accesso solo per chi ha una PEC attiva' },
+      ],
+    },
+    init() {
+      this._timer = setInterval(() => {
+        if (this.secondsLeft > 0 && !this.submitted) this.secondsLeft--;
+      }, 1000);
+    },
+    submit() { if (this.selected) this.submitted = true; },
+    ringClass() {
+      if (this.secondsLeft <= 5) return 'danger';
+      if (this.secondsLeft <= 10) return 'warn';
+      return '';
+    },
+    votesFor(letter) { return this.memberVotes.filter(v => v.option === letter); },
+  }
+}
+</script>
+</body>
+</html>
