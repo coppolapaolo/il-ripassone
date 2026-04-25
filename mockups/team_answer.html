@@ -6,208 +6,253 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
   :root {
-    --navy: #1E3A5F;
-    --navy-deep: #122544;
-    --teal: #3795B5;
-    --azure: #7FB9CC;
-    --gold: #E8A93C;
-    --gold-deep: #B27D1E;
-    --paper: #F4F7FA;
-    --ink: #0F172A;
-    --ink-soft: #475569;
-    --rule: #E2E8F0;
-    --success: #15803D;
-    --danger: #B91C1C;
+    --teal:        #4ABEC8;
+    --teal-deep:   #2A8893;
+    --coral:       #E84C3D;
+    --coral-deep:  #C13E32;
+    --yellow:      #F5C44A;
+    --yellow-deep: #D9A52F;
+    --cream:       #FBF1D9;
+    --cream-deep:  #F5E4C3;
+    --navy:        #1A2D40;
+    --navy-soft:   #2C4665;
+    --pink:        #F89A8E;
+    --green:       #4FB955;
+    --white:       #FFFFFF;
+    --success:     #2E9F39;
+    --danger:      #E84C3D;
   }
-  body { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--ink); }
-  .serif { font-family: 'Playfair Display', serif; letter-spacing: -0.01em; }
+
+  html, body { height: 100%; }
+  body {
+    font-family: 'Fredoka', sans-serif;
+    color: var(--navy);
+    background: var(--cream);
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(74,190,200,0.18) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(232,76,61,0.12) 0%, transparent 45%),
+      radial-gradient(rgba(26,45,64,0.06) 1.4px, transparent 1.4px);
+    background-size: auto, auto, 18px 18px;
+  }
+  .display-font { font-family: 'Luckiest Guy', cursive; letter-spacing: 0.02em; }
   .mono { font-family: 'JetBrains Mono', monospace; }
 
-  .panel {
+  .toon {
     background: #fff;
-    border: 1px solid var(--rule);
-    border-radius: 16px;
-    box-shadow:
-      0 1px 2px rgba(15,23,42,0.04),
-      0 6px 18px -8px rgba(15,23,42,0.08);
+    border: 3px solid var(--navy);
+    border-radius: 18px;
+    box-shadow: 5px 5px 0 var(--navy);
   }
-  .accent-bar { height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--navy), var(--teal), var(--azure)); }
+  .toon-sm { box-shadow: 3px 3px 0 var(--navy); border-radius: 12px; border-width: 2.5px; }
+  .toon-yellow { background: var(--yellow); }
+  .toon-coral  { background: var(--coral); color: #fff; }
+  .toon-teal   { background: var(--teal);  color: #fff; }
+  .toon-cream  { background: var(--cream); }
+  .toon-white  { background: #fff; }
 
-  .tag { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; color: var(--ink-soft); }
+  .title-outlined {
+    color: #fff;
+    -webkit-text-stroke: 2px var(--navy);
+    text-shadow: 3px 3px 0 var(--navy);
+  }
 
   /* opzioni */
   .opt-btn {
     background: #fff;
-    border: 1px solid var(--rule);
+    border: 3px solid var(--navy);
     border-radius: 14px;
-    transition: all 0.18s ease-out;
-    text-align: left;
+    box-shadow: 4px 4px 0 var(--navy);
+    transition: transform 0.12s, box-shadow 0.12s, background 0.18s;
+    text-align: left; padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+    width: 100%;
   }
-  .opt-btn:hover { border-color: var(--teal); transform: translateY(-1px); box-shadow: 0 6px 18px -6px rgba(55,149,181,0.30); }
+  .opt-btn:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--navy); }
   .opt-btn.selected {
-    border-color: var(--teal);
-    background: linear-gradient(180deg, #F0F9FB 0%, #ffffff 100%);
-    box-shadow: 0 0 0 3px rgba(55,149,181,0.14), 0 6px 18px -6px rgba(55,149,181,0.30);
+    background: var(--yellow);
   }
-  .opt-btn.selected .opt-letter { color: var(--teal); }
+  .opt-letter {
+    width: 52px; height: 52px;
+    background: var(--cream-deep); color: var(--navy);
+    border: 2.5px solid var(--navy); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Luckiest Guy', cursive; font-size: 28px;
+    flex-shrink: 0;
+  }
+  .opt-btn.selected .opt-letter {
+    background: var(--coral); color: #fff;
+  }
 
   /* countdown */
-  .ring-track { stroke: #E2E8F0; }
-  .ring-progress { stroke: var(--teal); transition: stroke-dashoffset 1s linear, stroke 0.3s; }
-  .ring-progress.warn { stroke: var(--gold); }
-  .ring-progress.danger { stroke: var(--danger); animation: pulse 0.7s ease-in-out infinite; }
+  .ring-track    { stroke: var(--cream-deep); }
+  .ring-progress { stroke: var(--teal-deep); transition: stroke-dashoffset 1s linear, stroke 0.3s; stroke-linecap: round; }
+  .ring-progress.warn   { stroke: var(--yellow-deep); }
+  .ring-progress.danger { stroke: var(--coral); animation: pulse 0.6s ease-in-out infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 
   /* CTA */
   .answer-cta {
-    background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
-    color: #fff;
-    border: none;
-    box-shadow: 0 10px 24px -8px rgba(30,58,95,0.5), inset 0 -2px 0 rgba(0,0,0,0.18);
-    transition: all 0.15s;
+    background: var(--coral); color: #fff;
+    border: 3px solid var(--navy); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--navy);
+    transition: transform 0.12s, box-shadow 0.12s, background 0.18s;
+    font-family: 'Luckiest Guy', cursive; font-size: 28px;
+    padding: 18px 24px; letter-spacing: 0.04em;
   }
-  .answer-cta:hover { transform: translateY(-1px); box-shadow: 0 14px 30px -8px rgba(30,58,95,0.6), inset 0 -2px 0 rgba(0,0,0,0.18); }
-  .answer-cta:active { transform: translateY(1px); }
-  .answer-cta:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+  .answer-cta:hover:not(:disabled) {
+    background: var(--coral-deep);
+    transform: translate(2px,2px); box-shadow: 3px 3px 0 var(--navy);
+  }
+  .answer-cta:disabled {
+    background: #DDD7C8; color: var(--navy-soft); cursor: not-allowed;
+    box-shadow: 3px 3px 0 var(--navy);
+  }
+  .answer-cta.submitted { background: var(--success); }
 
   /* member vote chip */
   .vote-chip {
-    background: #ECFDF5; color: var(--success); border: 1px solid #BBF7D0;
-    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    background: #fff;
+    color: var(--navy);
+    border: 2px solid var(--navy);
+    border-radius: 99px;
+    box-shadow: 2px 2px 0 var(--navy);
+    padding: 2px 9px;
+    font-size: 11px; font-weight: 600;
   }
 
-  /* danger frame nei secondi finali (sobrio: solo bordo header) */
-  .danger-frame { box-shadow: inset 0 0 0 2px rgba(185,28,28,0.45) !important; }
+  /* danger frame ultimi 5s — sobria */
+  .danger-frame .header-card { border-color: var(--coral) !important; box-shadow: 5px 5px 0 var(--coral) !important; }
 
-  .pip { width: 6px; height: 6px; border-radius: 99px; display: inline-block; }
+  .pip { width: 7px; height: 7px; border-radius: 99px; display: inline-block; border: 1.5px solid var(--navy); }
   @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-  .pip-live { background: #22C55E; animation: blink 1.6s ease-in-out infinite; }
-
-  .logo-img { mix-blend-mode: multiply; }
+  .pip-live { background: var(--green); animation: blink 1.6s ease-in-out infinite; }
 </style>
 </head>
-<body class="min-h-screen">
+<body>
 
-<div x-data="capitano()" class="min-h-screen max-w-xl mx-auto px-4 py-4 flex flex-col gap-3">
+<div x-data="capitano()" class="min-h-screen max-w-xl mx-auto px-4 py-4 flex flex-col gap-3"
+     :class="secondsLeft <= 5 && 'danger-frame'">
 
-  <!-- HEADER mini logo -->
+  <!-- HEADER mini -->
   <header class="flex items-center justify-between">
-    <img src="assets/logo.png" alt="Il Ripassone" class="h-10 logo-img" />
-    <span class="tag">Capitano</span>
+    <div class="toon toon-sm toon-yellow px-3 py-1.5 -rotate-1">
+      <h1 class="display-font text-xl title-outlined leading-none">IL RIPASSONE!</h1>
+    </div>
+    <span class="display-font text-xs uppercase tracking-widest" style="color:var(--navy-soft)">Capitano</span>
   </header>
-  <div class="accent-bar"></div>
 
   <!-- SQUADRA -->
-  <div class="panel p-4 flex items-center justify-between" :class="secondsLeft <= 5 && 'danger-frame'">
+  <div class="toon header-card p-4 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center serif text-2xl font-bold"
-           :style="`background: ${team.color}1A; color: ${team.color}; border: 1px solid ${team.color}66`">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center display-font text-2xl flex-shrink-0"
+           :style="`background: ${team.color}; color: #fff; border: 2.5px solid var(--navy); box-shadow: 3px 3px 0 var(--navy);`">
         <span x-text="team.name[0]"></span>
       </div>
       <div>
-        <div class="serif text-xl font-semibold leading-tight" :style="`color: ${team.color}`" x-text="team.name"></div>
-        <div class="text-xs text-slate-500 mt-0.5">
-          <span class="font-medium" style="color:var(--ink)" x-text="me.name"></span>
+        <div class="display-font text-xl leading-tight" :style="`color: ${team.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="team.name"></div>
+        <div class="text-xs mt-0.5" style="color:var(--navy-soft)">
+          <span class="font-semibold" style="color:var(--navy)" x-text="me.name"></span>
         </div>
       </div>
     </div>
     <div class="text-right">
-      <div class="tag">Punti</div>
-      <div class="serif text-3xl font-bold leading-none" style="color:var(--navy)" x-text="team.score"></div>
+      <div class="display-font text-xs uppercase" style="color:var(--navy-soft)">Punti</div>
+      <div class="display-font text-3xl leading-none" x-text="team.score"></div>
     </div>
   </div>
 
   <!-- META domanda -->
   <div class="grid grid-cols-3 gap-2">
-    <div class="panel px-3 py-2.5 text-center">
-      <div class="tag mb-0.5">Da</div>
-      <div class="text-sm font-semibold leading-tight" :style="`color: ${question.askedBy.color}`" x-text="question.askedBy.name"></div>
+    <div class="toon toon-sm px-3 py-2 text-center">
+      <div class="display-font text-[10px] uppercase" style="color:var(--navy-soft)">Da</div>
+      <div class="display-font text-sm leading-tight mt-0.5" :style="`color: ${question.askedBy.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="question.askedBy.name"></div>
     </div>
-    <div class="panel px-3 py-2.5 text-center" style="border-color: rgba(232,169,60,0.4)">
-      <div class="tag mb-0.5" style="color:var(--gold-deep)">In palio</div>
-      <div class="serif text-2xl font-bold leading-none" style="color:var(--navy)" x-text="question.bet"></div>
+    <div class="toon toon-sm toon-yellow px-3 py-2 text-center">
+      <div class="display-font text-[10px] uppercase">In palio</div>
+      <div class="display-font text-2xl leading-none mt-0.5" x-text="question.bet"></div>
     </div>
-    <div class="panel px-3 py-2.5 text-center">
-      <div class="tag mb-0.5">Lezione</div>
-      <div class="mono text-sm font-semibold" style="color:var(--navy)" x-text="question.lecture"></div>
+    <div class="toon toon-sm px-3 py-2 text-center">
+      <div class="display-font text-[10px] uppercase" style="color:var(--navy-soft)">Lezione</div>
+      <div class="mono text-sm font-bold mt-0.5" style="color:var(--navy)" x-text="question.lecture"></div>
     </div>
   </div>
 
-  <!-- COUNTDOWN -->
-  <div class="panel p-4 flex items-center gap-4">
+  <!-- COUNTDOWN + indicazione target -->
+  <div class="toon p-3 flex items-center gap-3">
     <div class="relative w-20 h-20 flex-shrink-0">
       <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" stroke-width="5" fill="none" class="ring-track"/>
-        <circle cx="50" cy="50" r="45" fill="none" stroke-width="6.5" stroke-linecap="round"
+        <circle cx="50" cy="50" r="44" stroke-width="7" fill="none" class="ring-track"/>
+        <circle cx="50" cy="50" r="44" stroke-width="8" fill="none"
                 class="ring-progress" :class="ringClass()"
-                stroke-dasharray="282.74" :stroke-dashoffset="282.74 * (1 - secondsLeft/totalSeconds)"/>
+                stroke-dasharray="276.46" :stroke-dashoffset="276.46 * (1 - secondsLeft/totalSeconds)"/>
       </svg>
       <div class="absolute inset-0 flex items-center justify-center">
-        <span class="serif font-bold tabular-nums text-3xl"
-              :style="secondsLeft <= 5 ? 'color:var(--danger)' : (secondsLeft <= 10 ? 'color:var(--gold-deep)' : 'color:var(--navy)')"
+        <span class="display-font tabular-nums text-3xl"
+              :style="secondsLeft <= 5 ? 'color:var(--coral)' : (secondsLeft <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy)')"
               x-text="secondsLeft"></span>
       </div>
     </div>
     <div class="flex-1">
-      <div class="tag">Tempo per rispondere</div>
-      <div class="text-sm mt-1" style="color:var(--ink-soft)">
+      <div class="display-font text-xs uppercase" style="color:var(--navy-soft)">Tempo per rispondere</div>
+      <div class="text-sm mt-1" style="color:var(--navy)">
         <template x-if="question.target === 'open'">
-          <span><span class="font-semibold" style="color:var(--teal)">Aperta a tutti</span> · primo che risponde blocca</span>
+          <span><span class="display-font text-base" style="color:var(--teal-deep); -webkit-text-stroke: 0.4px var(--navy);">APERTA A TUTTI ⚡</span><br><span class="text-xs" style="color:var(--navy-soft)">primo che risponde, blocca le altre</span></span>
         </template>
         <template x-if="question.target === 'me'">
-          <span>Domanda <span class="font-semibold" style="color:var(--gold-deep)">indirizzata a te</span></span>
+          <span><span class="display-font text-base" style="color:var(--coral); -webkit-text-stroke: 0.4px var(--navy);">A TE!</span><br><span class="text-xs" style="color:var(--navy-soft)">domanda diretta alla tua squadra</span></span>
         </template>
       </div>
     </div>
   </div>
 
-  <!-- DOMANDA -->
-  <div class="panel p-5">
-    <div class="tag mb-2">Domanda</div>
-    <p class="serif text-lg font-medium leading-snug" style="color:var(--ink)" x-text="question.text"></p>
+  <!-- DOMANDA — più spazio, font display -->
+  <div class="toon p-5">
+    <div class="display-font text-[10px] uppercase mb-2 px-2 py-1 inline-block toon toon-sm toon-coral" style="box-shadow: 2px 2px 0 var(--navy);">DOMANDA</div>
+    <p class="display-font leading-tight" style="font-size: clamp(20px, 5vw, 26px); color: var(--navy);" x-text="question.text"></p>
   </div>
 
   <!-- OPZIONI -->
   <div class="grid grid-cols-1 gap-2.5">
     <template x-for="opt in question.options" :key="opt.letter">
       <button @click="selected = opt.letter; submitted = false"
-              class="opt-btn p-4 flex items-start gap-4"
+              class="opt-btn"
               :class="selected === opt.letter && 'selected'">
-        <div class="opt-letter serif text-3xl font-bold w-9 text-center leading-none flex-shrink-0" style="color:var(--ink-soft)" x-text="opt.letter"></div>
+        <div class="opt-letter" x-text="opt.letter"></div>
         <div class="flex-1">
-          <div class="text-base leading-snug" style="color:var(--ink)" x-text="opt.text"></div>
+          <div class="text-base font-medium leading-snug" x-text="opt.text"></div>
           <div class="flex flex-wrap gap-1.5 mt-2" x-show="votesFor(opt.letter).length">
             <template x-for="v in votesFor(opt.letter)" :key="v.id">
-              <span class="vote-chip text-[11px] rounded-full px-2 py-0.5 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span class="vote-chip flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full" style="background:var(--green)"></span>
                 <span x-text="v.name"></span>
               </span>
             </template>
           </div>
         </div>
         <template x-if="votesFor(opt.letter).length">
-          <div class="serif text-xl font-bold mt-0.5" style="color:var(--success)" x-text="votesFor(opt.letter).length"></div>
+          <span class="display-font text-xl flex-shrink-0" style="color:var(--success); -webkit-text-stroke: 0.4px var(--navy);" x-text="votesFor(opt.letter).length"></span>
         </template>
       </button>
     </template>
   </div>
 
   <!-- CTA -->
-  <button class="answer-cta rounded-2xl py-4 serif text-2xl font-bold tracking-wide mt-1"
+  <button class="answer-cta mt-1"
+          :class="submitted && 'submitted'"
           :disabled="!selected || submitted"
           @click="submit()">
-    <span x-show="!submitted">Rispondi · <span x-text="selected || '—'"></span></span>
-    <span x-show="submitted">Risposta inviata · attendi…</span>
+    <span x-show="!submitted">RISPONDI · <span x-text="selected || '—'"></span></span>
+    <span x-show="submitted">✓ INVIATA · ATTENDI…</span>
   </button>
 
-  <!-- FOOTER live -->
-  <div class="panel px-4 py-3 text-xs flex items-center justify-between" style="color:var(--ink-soft)">
-    <span><span class="serif text-base font-bold" style="color:var(--ink)" x-text="memberVotes.length"></span><span class="text-slate-400">/</span><span x-text="team.memberCount - 1"></span> compagni hanno votato</span>
-    <span class="flex items-center gap-1.5"><span class="pip pip-live"></span> live</span>
+  <!-- FOOTER live voti -->
+  <div class="toon toon-sm px-3 py-2 text-xs flex items-center justify-between" style="color:var(--navy-soft)">
+    <span><span class="display-font text-base" style="color:var(--navy)" x-text="memberVotes.length"></span><span class="opacity-50">/</span><span x-text="team.memberCount - 1"></span> compagni hanno votato</span>
+    <span class="flex items-center gap-1.5"><span class="pip pip-live"></span> <span class="font-semibold">live</span></span>
   </div>
 
 </div>
@@ -216,7 +261,7 @@
 function capitano() {
   return {
     me: { id: 'p1', name: 'Marta Rossi' },
-    team: { name: 'I Cybernauti', color: '#E8A93C', score: 185, memberCount: 4 },
+    team: { name: 'I CYBERNAUTI', color: '#D9A52F', score: 185, memberCount: 4 },
     selected: null, submitted: false,
     totalSeconds: 30, secondsLeft: 14,
     memberVotes: [
@@ -226,7 +271,7 @@ function capitano() {
     ],
     question: {
       lecture: 'L11', bet: 50, target: 'open',
-      askedBy: { name: 'Le Algoritmiche', color: '#3795B5' },
+      askedBy: { name: 'LE ALGORITMICHE', color: '#2A8893' },
       text: "Quale principio prevede l'art. 64-bis del CAD per l'accesso ai servizi digitali della PA?",
       options: [
         { letter: 'A', text: 'Accesso libero senza autenticazione per tutti i cittadini' },

@@ -6,269 +6,309 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
   :root {
-    --navy: #1E3A5F;
-    --navy-deep: #122544;
-    --teal: #3795B5;
-    --azure: #7FB9CC;
-    --gold: #E8A93C;
-    --gold-deep: #B27D1E;
-    --paper: #F4F7FA;
-    --ink: #0F172A;
-    --ink-soft: #475569;
-    --rule: #E2E8F0;
-    --success: #15803D;
-    --danger: #B91C1C;
+    --teal:        #4ABEC8;
+    --teal-deep:   #2A8893;
+    --coral:       #E84C3D;
+    --coral-deep:  #C13E32;
+    --yellow:      #F5C44A;
+    --yellow-deep: #D9A52F;
+    --cream:       #FBF1D9;
+    --cream-deep:  #F5E4C3;
+    --navy:        #1A2D40;
+    --navy-soft:   #2C4665;
+    --pink:        #F89A8E;
+    --green:       #4FB955;
+    --purple:      #9B6BD3;
+    --white:       #FFFFFF;
+    --success:     #2E9F39;
+    --danger:      #E84C3D;
   }
-  body { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--ink); }
-  .serif { font-family: 'Playfair Display', serif; letter-spacing: -0.01em; }
+
+  html, body { height: 100%; }
+  body {
+    font-family: 'Fredoka', sans-serif;
+    color: var(--navy);
+    background: var(--cream);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(74,190,200,0.20) 0%, transparent 35%),
+      radial-gradient(circle at 85% 100%, rgba(232,76,61,0.12) 0%, transparent 35%),
+      radial-gradient(rgba(26,45,64,0.06) 1.4px, transparent 1.4px);
+    background-size: auto, auto, 18px 18px;
+  }
+  .display-font {
+    font-family: 'Luckiest Guy', cursive;
+    letter-spacing: 0.02em; -webkit-font-smoothing: antialiased;
+  }
   .mono { font-family: 'JetBrains Mono', monospace; }
 
-  .stage-bg {
-    background:
-      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(55,149,181,0.10), transparent 60%),
-      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(232,169,60,0.06), transparent 60%),
-      var(--paper);
-  }
-  .panel {
+  /* Cartoon card with offset shadow (neobrutalism) */
+  .toon {
     background: #fff;
-    border: 1px solid var(--rule);
-    border-radius: 18px;
-    box-shadow:
-      0 1px 2px rgba(15,23,42,0.04),
-      0 8px 24px -8px rgba(15,23,42,0.08);
+    border: 3px solid var(--navy);
+    border-radius: 20px;
+    box-shadow: 6px 6px 0 var(--navy);
+    position: relative;
   }
-  .panel-tinted { background: linear-gradient(180deg, #ffffff 0%, #F8FAFC 100%); }
+  .toon-sm { box-shadow: 4px 4px 0 var(--navy); border-radius: 14px; }
+  .toon-lg { box-shadow: 8px 8px 0 var(--navy); border-radius: 28px; }
 
-  .accent-bar { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--navy), var(--teal), var(--azure)); }
+  .toon-yellow { background: var(--yellow); }
+  .toon-coral  { background: var(--coral); color: #fff; }
+  .toon-teal   { background: var(--teal);  color: #fff; }
+  .toon-cream  { background: var(--cream); }
 
-  .tag {
-    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600;
-    color: var(--ink-soft);
+  /* Outlined display title */
+  .title-outlined {
+    color: #fff;
+    -webkit-text-stroke: 2px var(--navy);
+    text-shadow:
+      4px 4px 0 var(--navy),
+      4px 4px 0 var(--navy);
+  }
+
+  .ribbon-bar {
+    height: 14px;
+    background: repeating-linear-gradient(
+      45deg,
+      var(--coral) 0 14px,
+      var(--cream-deep) 14px 28px,
+      var(--teal) 28px 42px,
+      var(--cream-deep) 42px 56px,
+      var(--yellow) 56px 70px,
+      var(--cream-deep) 70px 84px
+    );
+    border-radius: 99px;
+    border: 3px solid var(--navy);
+    box-shadow: 4px 4px 0 var(--navy);
   }
 
   /* Countdown ring */
-  .ring-track { stroke: #E2E8F0; }
-  .ring-progress {
-    stroke: var(--teal);
-    transition: stroke-dashoffset 1s linear, stroke 0.3s;
-  }
-  .ring-progress.warn { stroke: var(--gold); }
-  .ring-progress.danger { stroke: var(--danger); animation: pulse 0.8s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .ring-track    { stroke: var(--cream-deep); }
+  .ring-progress { stroke: var(--teal-deep); transition: stroke-dashoffset 1s linear, stroke 0.3s; stroke-linecap: round; }
+  .ring-progress.warn   { stroke: var(--yellow-deep); }
+  .ring-progress.danger { stroke: var(--coral); animation: pulse 0.7s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.97); } }
 
   /* Score bump */
   @keyframes scoreUp {
-    0% { transform: translateY(0) scale(1); color: var(--ink); }
-    35% { transform: translateY(-8px) scale(1.18); color: var(--success); }
-    100% { transform: translateY(0) scale(1); color: var(--ink); }
+    0%   { transform: translateY(0) scale(1); color: var(--navy); }
+    35%  { transform: translateY(-8px) scale(1.2); color: var(--success); }
+    100% { transform: translateY(0) scale(1); color: var(--navy); }
   }
-  .score-bump { animation: scoreUp 1.4s ease-out; }
+  .score-bump { animation: scoreUp 1.4s ease-out; display:inline-block; }
 
   /* Reveal */
-  @keyframes revealCorrect {
-    0% { box-shadow: 0 0 0 0 rgba(21,128,61,0); transform: scale(1); }
-    35% { box-shadow: 0 0 0 6px rgba(21,128,61,0.18); transform: scale(1.01); }
-    100% { box-shadow: 0 0 0 0 rgba(21,128,61,0); transform: scale(1); }
+  @keyframes wiggle {
+    0%,100% { transform: rotate(0); }
+    25% { transform: rotate(-1.5deg); }
+    75% { transform: rotate(1.5deg); }
   }
   .reveal-correct {
-    background: linear-gradient(180deg, #F0FDF4 0%, #ECFDF5 100%) !important;
-    border-color: #86EFAC !important;
-    animation: revealCorrect 1.6s ease-out;
+    background: linear-gradient(180deg, #DEF7E1 0%, #C5F0CD 100%) !important;
+    border-color: var(--success) !important;
+    box-shadow: 6px 6px 0 var(--success), 0 0 0 0 rgba(0,0,0,0);
+    animation: wiggle 0.8s ease-in-out;
   }
-  .reveal-correct .opt-letter { color: var(--success) !important; }
+  .reveal-correct .opt-letter {
+    background: var(--success) !important; color: #fff !important; border-color: var(--navy) !important;
+  }
   .reveal-wrong { opacity: 0.45; }
 
-  /* Team row hover-less; bar fill */
-  .team-bar-fill { transition: width 1s cubic-bezier(0.34,1.56,0.64,1); }
+  /* Squadre band */
+  .team-cell { padding: 14px 16px 12px; position: relative; }
+  .team-cell + .team-cell { border-left: 3px solid var(--navy); }
+  .team-cell.highlight-asking {
+    background: var(--yellow);
+  }
+  .team-cell.highlight-answering {
+    background: var(--teal); color: #fff;
+  }
+  .team-cell.highlight-answering .text-slate-500 { color: rgba(255,255,255,0.85) !important; }
 
   /* Status pip */
-  .pip { width: 6px; height: 6px; border-radius: 99px; display: inline-block; }
+  .pip { width: 8px; height: 8px; border-radius: 99px; display: inline-block; border: 1.5px solid var(--navy); }
   @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-  .pip-live { background: #22C55E; animation: blink 1.6s ease-in-out infinite; }
+  .pip-live { background: var(--green); animation: blink 1.6s ease-in-out infinite; }
 
-  /* Logo color pickup (white background of logo blends in) */
-  .logo-img { mix-blend-mode: multiply; }
-
-  /* Subtle row hover for asking team */
-  .asking-team {
-    background: linear-gradient(90deg, rgba(232,169,60,0.10), rgba(232,169,60,0.02)) !important;
-    border-color: rgba(232,169,60,0.45) !important;
+  /* CTA buttons */
+  .btn-toon {
+    background: #fff;
+    border: 3px solid var(--navy);
+    border-radius: 12px;
+    padding: 8px 16px;
+    box-shadow: 4px 4px 0 var(--navy);
+    transition: transform 0.1s, box-shadow 0.1s;
+    font-weight: 600; color: var(--navy);
   }
-  .answering-team {
-    background: linear-gradient(90deg, rgba(55,149,181,0.10), rgba(55,149,181,0.02)) !important;
-    border-color: rgba(55,149,181,0.45) !important;
+  .btn-toon:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--navy); }
+
+  /* Star sparkles around question */
+  .sparkle {
+    position: absolute; pointer-events: none;
+    width: 26px; height: 26px;
+    color: var(--yellow);
+  }
+
+  .opt-letter {
+    width: 72px; height: 72px;
+    background: var(--cream-deep); color: var(--navy);
+    border: 3px solid var(--navy); border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Luckiest Guy', cursive; font-size: 44px;
+    box-shadow: 3px 3px 0 var(--navy);
+    flex-shrink: 0;
   }
 </style>
 </head>
-<body class="stage-bg min-h-screen">
+<body>
 
-<div x-data="display()" class="min-h-screen flex flex-col p-6 gap-5">
+<div x-data="display()" class="min-h-screen flex flex-col p-6 gap-4">
 
-  <!-- HEADER -->
-  <header class="flex items-center justify-between">
-    <div class="flex items-center gap-5">
-      <img src="assets/logo.png" alt="Il Ripassone" class="h-16 logo-img" />
-    </div>
-    <div class="flex items-center gap-3">
-      <div class="panel px-5 py-2.5 flex items-center gap-3">
-        <span class="tag">Round</span>
-        <span class="serif text-3xl font-bold leading-none" style="color:var(--navy)" x-text="round"></span>
-        <span class="text-slate-300">/</span>
-        <span class="text-slate-500 text-lg" x-text="totalRounds"></span>
+  <!-- HEADER: hero compatto + round + countdown -->
+  <header class="flex items-center justify-between gap-6">
+    <!-- Brand: titolo cartoon CSS (no immagine, scala perfetto) -->
+    <div class="flex items-center gap-4">
+      <div class="toon toon-yellow toon-sm px-5 py-2.5 -rotate-2">
+        <h1 class="display-font text-4xl title-outlined leading-none">IL RIPASSONE!</h1>
       </div>
-      <button @click="togglePhase()" class="panel px-4 py-2.5 text-xs text-slate-500 hover:text-[var(--navy)]">
-        ⇄ <span class="serif text-base" x-text="phase"></span>
-      </button>
+      <span class="display-font text-sm text-[var(--navy-soft)] uppercase tracking-widest hidden lg:inline">DIPA · L19 · 2026</span>
+    </div>
+
+    <!-- Round badge -->
+    <div class="toon toon-cream toon-sm px-5 py-2.5 flex items-baseline gap-2.5 rotate-1">
+      <span class="display-font text-xs uppercase">Round</span>
+      <span class="display-font text-3xl leading-none" x-text="round"></span>
+      <span class="text-[var(--navy-soft)]">/</span>
+      <span class="display-font text-2xl leading-none" x-text="totalRounds"></span>
+    </div>
+
+    <!-- Countdown -->
+    <div class="flex items-center gap-3">
+      <div class="text-right">
+        <div class="display-font text-xs uppercase" :style="secondsLeft <= 5 && 'color:var(--coral)'">Tempo</div>
+        <div class="text-xs text-[var(--navy-soft)] mt-0.5" x-text="totalSeconds + 's totali'"></div>
+      </div>
+      <div class="toon toon-sm w-28 h-28 flex items-center justify-center relative bg-white">
+        <svg class="absolute inset-1.5 -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="42" stroke-width="9" fill="none" class="ring-track"/>
+          <circle cx="50" cy="50" r="42" stroke-width="9" fill="none"
+                  class="ring-progress" :class="ringClass()"
+                  stroke-dasharray="263.89" :stroke-dashoffset="263.89 * (1 - secondsLeft/totalSeconds)"/>
+        </svg>
+        <span class="display-font tabular-nums text-5xl leading-none relative"
+              :style="secondsLeft <= 5 ? 'color:var(--coral)' : (secondsLeft <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy)')"
+              x-text="secondsLeft"></span>
+      </div>
     </div>
   </header>
 
-  <div class="accent-bar"></div>
+  <!-- RIBBON decorativo -->
+  <div class="ribbon-bar"></div>
 
-  <!-- LEADERBOARD -->
-  <section class="grid grid-cols-4 gap-4">
-    <template x-for="(t, idx) in teams" :key="t.id">
-      <div class="panel p-4 relative overflow-hidden"
-           :class="t.id === askingTeam.id ? 'asking-team' : (t.id === answeringTeam.id ? 'answering-team' : '')">
-        <!-- side accent -->
-        <div class="absolute left-0 top-0 bottom-0 w-1" :style="`background: ${t.color}`"></div>
-        <div class="pl-2">
-          <div class="flex items-center justify-between mb-1.5">
-            <div class="flex items-baseline gap-2">
-              <span class="serif text-2xl font-semibold" style="color:var(--ink-soft)" x-text="'#' + (idx+1)"></span>
-              <span class="serif text-xl font-semibold" :style="`color: ${t.color}`" x-text="t.name"></span>
+  <!-- LEADERBOARD strip — band orizzontale con stile cartoon -->
+  <section class="toon overflow-hidden">
+    <div class="grid" :style="`grid-template-columns: repeat(${teams.length}, minmax(0, 1fr));`">
+      <template x-for="(t, idx) in teams" :key="t.id">
+        <div class="team-cell"
+             :class="t.id === askingTeam.id ? 'highlight-asking' : (t.id === answeringTeam.id ? 'highlight-answering' : '')">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-baseline gap-2 min-w-0">
+              <span class="display-font text-lg" :style="`color: ${t.color}`" x-text="'#'+(idx+1)"></span>
+              <span class="display-font text-xl truncate" :style="`color: ${t.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="t.name"></span>
             </div>
             <template x-if="t.id === askingTeam.id">
-              <span class="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded" style="background:rgba(232,169,60,0.18); color:var(--gold-deep)">Pone</span>
+              <span class="display-font text-[11px] uppercase px-1.5 py-0.5 rounded toon-sm bg-white" style="box-shadow: 2px 2px 0 var(--navy); border: 2px solid var(--navy);">PONE</span>
             </template>
             <template x-if="t.id === answeringTeam.id">
-              <span class="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded" style="background:rgba(55,149,181,0.18); color:#1E5F76">Risponde</span>
+              <span class="display-font text-[11px] uppercase px-1.5 py-0.5 rounded toon-sm" style="background:var(--yellow); color:var(--navy); box-shadow: 2px 2px 0 var(--navy); border: 2px solid var(--navy);">RISP.</span>
             </template>
           </div>
-          <div class="flex items-baseline gap-2">
-            <span class="serif text-5xl font-bold tabular-nums leading-none" :class="t.bumped && 'score-bump'" x-text="t.score"></span>
-            <span class="text-slate-400 text-xs">pt</span>
+          <div class="flex items-baseline gap-1.5">
+            <span class="display-font text-4xl tabular-nums leading-none" :class="t.bumped && 'score-bump'" x-text="t.score"></span>
+            <span class="text-xs text-slate-500">pt</span>
           </div>
-          <!-- progress bar -->
-          <div class="mt-3 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-            <div class="h-full team-bar-fill rounded-full" :style="`width: ${barPct(t.score)}%; background: ${t.color}`"></div>
-          </div>
-          <div class="text-[11px] text-slate-500 mt-2 truncate">
-            <span class="font-medium" x-text="t.captain"></span><span class="text-slate-400"> · </span><span x-text="t.members + ' membri'"></span>
-          </div>
+          <div class="text-[11px] text-slate-500 mt-1 truncate" x-text="t.captain + ' · ' + t.members + ' membri'"></div>
         </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- META TURNO -->
+  <section class="toon p-3.5 flex items-center gap-5">
+    <div class="flex items-center gap-2">
+      <span class="display-font text-xs uppercase text-[var(--navy-soft)]">Pone</span>
+      <span class="display-font text-xl" :style="`color: ${askingTeam.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="askingTeam.name"></span>
+    </div>
+    <span class="w-1 h-7 rounded-full" style="background: var(--navy)"></span>
+    <div class="flex items-center gap-2">
+      <span class="display-font text-xs uppercase text-[var(--navy-soft)]">Risponde</span>
+      <template x-if="question.target === 'open'">
+        <span class="display-font text-xl" style="color:var(--teal-deep); -webkit-text-stroke: 0.5px var(--navy);">APERTA A TUTTI ⚡</span>
+      </template>
+      <template x-if="question.target !== 'open'">
+        <span class="display-font text-xl" :style="`color: ${answeringTeam.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="answeringTeam.name"></span>
+      </template>
+    </div>
+    <span class="w-1 h-7 rounded-full" style="background: var(--navy)"></span>
+    <div class="flex items-baseline gap-2">
+      <span class="display-font text-xs uppercase text-[var(--navy-soft)]">In palio</span>
+      <span class="toon-sm toon px-3 py-1 toon-yellow display-font text-2xl leading-none" x-text="question.bet + ' pt'"></span>
+    </div>
+    <div class="ml-auto flex items-center gap-3">
+      <span class="mono text-xs px-2.5 py-1 rounded-md toon-sm toon" style="background:#fff;" x-text="question.lecture + ' · ' + question.topic"></span>
+      <span class="text-base">
+        <template x-for="i in 3"><span :class="i <= question.difficulty ? 'text-[var(--yellow-deep)]' : 'text-[var(--cream-deep)]'">★</span></template>
+      </span>
+    </div>
+  </section>
+
+  <!-- DOMANDA — DOMINANTE -->
+  <section class="flex-1 flex items-center min-h-0 px-6 py-2 relative">
+    <!-- Decorative sparkles -->
+    <svg class="sparkle top-[-6px] left-2 -rotate-12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4L12 2z"/></svg>
+    <svg class="sparkle top-2 right-4 rotate-12" viewBox="0 0 24 24" fill="currentColor" style="color: var(--coral)"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4L12 2z"/></svg>
+    <svg class="sparkle bottom-2 right-12 rotate-45" viewBox="0 0 24 24" fill="currentColor" style="color: var(--teal)"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4L12 2z"/></svg>
+
+    <div class="toon toon-lg w-full p-12">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="display-font text-xs uppercase tracking-widest px-2 py-1 toon toon-sm toon-coral" style="box-shadow: 3px 3px 0 var(--navy);">Domanda</span>
+        <span class="text-sm text-[var(--navy-soft)]" x-text="'Lezione ' + question.lecture.replace('L','') + ' · ' + question.topic"></span>
+      </div>
+      <p class="display-font" style="font-size: clamp(36px, 4.4vw, 64px); line-height: 1.08; color: var(--navy);" x-text="question.text"></p>
+    </div>
+  </section>
+
+  <!-- OPZIONI -->
+  <section class="grid grid-cols-1 gap-3 px-1">
+    <template x-for="opt in question.options" :key="opt.letter">
+      <div class="toon toon-sm flex items-center gap-5 px-5 py-3.5"
+           :class="phase === 'reveal' && (opt.letter === question.correct ? 'reveal-correct' : 'reveal-wrong')">
+        <div class="opt-letter" x-text="opt.letter"></div>
+        <div class="text-2xl font-medium leading-snug flex-1" x-text="opt.text"></div>
+        <template x-if="phase === 'reveal' && opt.letter === question.correct">
+          <span class="display-font text-lg flex items-center gap-1.5 px-3 py-1 toon toon-sm" style="background:var(--success); color:#fff; box-shadow: 3px 3px 0 var(--navy);">
+            ✓ CORRETTA!
+          </span>
+        </template>
       </div>
     </template>
   </section>
 
-  <!-- STAGE -->
-  <main class="flex-1 grid grid-cols-12 gap-5 items-stretch">
-
-    <!-- Sinistra: meta turno -->
-    <aside class="col-span-3 flex flex-col gap-4">
-      <div class="panel p-5">
-        <div class="tag mb-2">Pone la domanda</div>
-        <div class="serif text-2xl font-semibold leading-tight" :style="`color: ${askingTeam.color}`" x-text="askingTeam.name"></div>
-        <div class="text-xs text-slate-500 mt-1.5">Capitano · <span class="text-slate-700 font-medium" x-text="askingTeam.captain"></span></div>
-      </div>
-
-      <div class="panel p-5">
-        <div class="tag mb-2">Risponde</div>
-        <template x-if="question.target === 'open'">
-          <div>
-            <div class="serif text-2xl font-semibold leading-tight" style="color:var(--teal)">Aperta a tutti</div>
-            <div class="text-xs text-slate-500 mt-1.5">Primo capitano che risponde, blocca le altre squadre</div>
-          </div>
-        </template>
-        <template x-if="question.target !== 'open'">
-          <div>
-            <div class="serif text-2xl font-semibold leading-tight" :style="`color: ${answeringTeam.color}`" x-text="answeringTeam.name"></div>
-            <div class="text-xs text-slate-500 mt-1.5">Capitano · <span class="text-slate-700 font-medium" x-text="answeringTeam.captain"></span></div>
-          </div>
-        </template>
-      </div>
-
-      <div class="panel panel-tinted p-5 mt-auto" style="border-color: rgba(232,169,60,0.4)">
-        <div class="tag mb-2" style="color:var(--gold-deep)">Puntata</div>
-        <div class="flex items-baseline gap-2">
-          <span class="serif text-6xl font-bold leading-none" style="color:var(--navy)" x-text="question.bet"></span>
-          <span class="text-slate-500 text-sm">punti</span>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3">
-        <div class="panel px-4 py-3">
-          <div class="tag mb-1">Lezione</div>
-          <div class="mono text-sm font-semibold" style="color:var(--navy)" x-text="question.lecture"></div>
-        </div>
-        <div class="panel px-4 py-3">
-          <div class="tag mb-1">Difficoltà</div>
-          <div class="text-sm">
-            <template x-for="i in 3"><span :class="i <= question.difficulty ? 'text-[var(--gold)]' : 'text-slate-200'">★</span></template>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Centro: domanda + opzioni -->
-    <section class="col-span-6 flex flex-col gap-4">
-      <div class="panel p-7">
-        <div class="tag mb-3">Domanda</div>
-        <p class="serif text-3xl font-medium leading-snug" style="color:var(--ink)" x-text="question.text"></p>
-        <div class="text-xs text-slate-500 mt-3 mono" x-text="question.lecture + ' · ' + question.topic"></div>
-      </div>
-      <div class="grid grid-cols-2 gap-3 flex-1">
-        <template x-for="opt in question.options" :key="opt.letter">
-          <div class="panel p-5 flex items-center gap-4 transition-all"
-               :class="phase === 'reveal' && (opt.letter === question.correct ? 'reveal-correct' : 'reveal-wrong')">
-            <div class="opt-letter serif text-5xl font-bold w-12 text-center leading-none" style="color:var(--navy)" x-text="opt.letter"></div>
-            <div class="text-lg leading-snug" style="color:var(--ink)" x-text="opt.text"></div>
-          </div>
-        </template>
-      </div>
-    </section>
-
-    <!-- Destra: countdown -->
-    <aside class="col-span-3 flex flex-col items-center">
-      <div class="panel w-full p-6 flex flex-col items-center">
-        <div class="tag mb-4">Tempo rimanente</div>
-        <div class="relative w-60 h-60">
-          <svg class="w-full h-full -rotate-90" viewBox="0 0 200 200">
-            <circle cx="100" cy="100" r="90" stroke-width="6" fill="none" class="ring-track"/>
-            <circle cx="100" cy="100" r="90" stroke-width="9" fill="none" stroke-linecap="round"
-                    class="ring-progress" :class="ringClass()"
-                    stroke-dasharray="565.48" :stroke-dashoffset="565.48 * (1 - secondsLeft/totalSeconds)"/>
-          </svg>
-          <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span class="serif font-bold tabular-nums text-7xl leading-none"
-                  :style="secondsLeft <= 5 ? 'color:var(--danger)' : (secondsLeft <= 10 ? 'color:var(--gold-deep)' : 'color:var(--navy)')"
-                  x-text="secondsLeft"></span>
-            <span class="tag mt-1.5">secondi</span>
-          </div>
-        </div>
-        <div class="mt-5 text-center">
-          <div class="tag">Su</div>
-          <div class="serif text-xl font-semibold mt-1" style="color:var(--ink)" x-text="totalSeconds + ' s totali'"></div>
-        </div>
-      </div>
-      <div class="mt-4 w-full flex flex-col gap-2">
-        <button @click="reveal()" class="panel px-4 py-3 text-sm hover:bg-slate-50">Mostra risposta</button>
-        <button @click="reset()" class="panel px-4 py-3 text-sm text-slate-500 hover:bg-slate-50">↻ Reset countdown</button>
-      </div>
-    </aside>
-  </main>
-
   <!-- FOOTER -->
-  <footer class="panel px-5 py-3 flex items-center justify-between text-xs text-slate-500">
-    <span>Master Diritto per l'Innovazione · LM-63 · Università di Udine</span>
+  <footer class="flex items-center justify-between text-xs px-2" style="color: var(--navy-soft)">
+    <span class="display-font uppercase tracking-wider text-xs">Master Diritto per l'Innovazione · LM-63 · Università di Udine</span>
     <span class="flex items-center gap-2">
       <span class="pip pip-live"></span>
-      <span><span class="font-semibold text-slate-700">16</span> dispositivi connessi</span>
+      <span><span class="display-font text-base text-[var(--navy)]">16</span> dispositivi connessi</span>
     </span>
-    <span class="mono">https://abc1-23.ngrok-free.app</span>
+    <span class="flex items-center gap-2">
+      <button @click="reveal()" class="btn-toon text-xs">▸ Mostra risposta</button>
+      <button @click="reset()" class="btn-toon text-xs">↻ Reset</button>
+    </span>
   </footer>
 
 </div>
@@ -279,17 +319,17 @@ function display() {
     phase: 'question',
     round: 3, totalRounds: 12,
     totalSeconds: 30, secondsLeft: 18,
-    askingTeam: { id: 't1', name: 'I Cybernauti', color: '#E8A93C', captain: 'Marta Rossi' },
-    answeringTeam: { id: 't3', name: 'Le Algoritmiche', color: '#3795B5', captain: 'Luca Bianchi' },
+    askingTeam: { id: 't1', name: 'I CYBERNAUTI', color: '#E8A93C', captain: 'Marta Rossi' },
+    answeringTeam: { id: 't3', name: 'LE ALGORITMICHE', color: '#4ABEC8', captain: 'Luca Bianchi' },
     teams: [
-      { id: 't3', name: 'Le Algoritmiche', color: '#3795B5', score: 220, captain: 'Luca Bianchi', members: 4, bumped: true },
-      { id: 't1', name: 'I Cybernauti',    color: '#E8A93C', score: 185, captain: 'Marta Rossi',  members: 3, bumped: false },
-      { id: 't2', name: 'Bit & Bot',       color: '#1E3A5F', score: 140, captain: 'Sara Verdi',   members: 4, bumped: false },
-      { id: 't4', name: 'I Pixelati',      color: '#7FB9CC', score:  95, captain: 'Davide Neri',  members: 3, bumped: false },
+      { id: 't3', name: 'LE ALGORITMICHE', color: '#2A8893', score: 220, captain: 'Luca Bianchi', members: 4, bumped: true },
+      { id: 't1', name: 'I CYBERNAUTI',    color: '#D9A52F', score: 185, captain: 'Marta Rossi',  members: 3, bumped: false },
+      { id: 't2', name: 'BIT & BOT',       color: '#E84C3D', score: 140, captain: 'Sara Verdi',   members: 4, bumped: false },
+      { id: 't4', name: 'I PIXELATI',      color: '#9B6BD3', score:  95, captain: 'Davide Neri',  members: 3, bumped: false },
     ],
     question: {
       lecture: 'L11', topic: 'CAD · art. 64-bis', difficulty: 2, bet: 50, target: 'open',
-      text: "Quale principio prevede l'art. 64-bis del CAD per l'accesso ai servizi digitali della PA?",
+      text: "Quale principio prevede l'art. 64-bis del CAD per l'accesso ai servizi digitali della Pubblica Amministrazione?",
       options: [
         { letter: 'A', text: 'Accesso libero senza autenticazione per tutti i cittadini' },
         { letter: 'B', text: 'Accesso tramite SPID, CIE o CNS come unici strumenti consentiti' },
@@ -303,17 +343,12 @@ function display() {
         if (this.phase === 'question' && this.secondsLeft > 0) this.secondsLeft--;
       }, 1000);
     },
-    togglePhase() { this.phase = this.phase === 'question' ? 'reveal' : 'question'; },
     reveal() { this.phase = 'reveal'; },
     reset() { this.secondsLeft = this.totalSeconds; this.phase = 'question'; },
     ringClass() {
       if (this.secondsLeft <= 5) return 'danger';
       if (this.secondsLeft <= 10) return 'warn';
       return '';
-    },
-    barPct(score) {
-      const max = Math.max(...this.teams.map(t => t.score), 1);
-      return Math.round((score / max) * 100);
     },
   }
 }
