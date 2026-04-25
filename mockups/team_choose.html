@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF1D9">
+<title>Il Ripassone — Capitano · Scegli la domanda</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+  :root {
+    --teal:        #4ABEC8;
+    --teal-deep:   #2A8893;
+    --coral:       #E84C3D;
+    --coral-deep:  #C13E32;
+    --yellow:      #F5C44A;
+    --yellow-deep: #D9A52F;
+    --cream:       #FBF1D9;
+    --cream-deep:  #F5E4C3;
+    --navy:        #1A2D40;
+    --navy-soft:   #2C4665;
+    --pink:        #F89A8E;
+    --green:       #4FB955;
+    --success:     #2E9F39;
+    --danger:      #E84C3D;
+    --purple:      #9B6BD3;
+  }
+  [x-cloak] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Fredoka', sans-serif;
+    color: var(--navy);
+    background: var(--cream);
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(74,190,200,0.20) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(232,76,61,0.14) 0%, transparent 45%),
+      radial-gradient(rgba(26,45,64,0.06) 1.4px, transparent 1.4px);
+    background-size: auto, auto, 18px 18px;
+    padding-top: env(safe-area-inset-top);
+  }
+  .display-font { font-family: 'Luckiest Guy', cursive; letter-spacing: 0.02em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .toon {
+    background: #fff;
+    border: 3px solid var(--navy);
+    border-radius: 18px;
+    box-shadow: 5px 5px 0 var(--navy);
+  }
+  .toon-sm { box-shadow: 3px 3px 0 var(--navy); border-radius: 12px; border-width: 2.5px; }
+  .toon-yellow { background: var(--yellow); }
+  .toon-coral  { background: var(--coral); color: #fff; }
+  .toon-teal   { background: var(--teal);  color: #fff; }
+  .toon-cream  { background: var(--cream); }
+
+  .title-outlined {
+    color: #fff;
+    -webkit-text-stroke: 2px var(--navy);
+    text-shadow: 3px 3px 0 var(--navy);
+  }
+
+  /* chip filtro */
+  .chip {
+    background: #fff; color: var(--navy);
+    border: 2.5px solid var(--navy);
+    border-radius: 99px;
+    padding: 5px 12px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 2px 2px 0 var(--navy);
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .chip:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--navy); }
+  .chip.on    { background: var(--teal); color: #fff; }
+  .chip.diff-1.on { background: var(--green); }
+  .chip.diff-2.on { background: var(--yellow); color: var(--navy); }
+  .chip.diff-3.on { background: var(--coral); }
+
+  /* card domanda nella lista */
+  .q-card {
+    background: #fff;
+    border: 2.5px solid var(--navy); border-radius: 14px;
+    box-shadow: 3px 3px 0 var(--navy);
+    padding: 12px 14px;
+    transition: all 0.12s;
+  }
+  .q-card:active { transform: translate(1px,1px); box-shadow: 2px 2px 0 var(--navy); }
+  .q-card.selected {
+    background: linear-gradient(180deg, #FFF7E0 0%, var(--yellow) 100%);
+    border-color: var(--coral);
+    box-shadow: 4px 4px 0 var(--coral);
+  }
+
+  /* difficolta dots */
+  .diff-dots { display: inline-flex; gap: 2px; }
+  .diff-dots span { width: 7px; height: 7px; border-radius: 99px; background: var(--cream-deep); border: 1px solid var(--navy); }
+  .diff-dots span.on  { background: var(--yellow-deep); }
+  .q-card.selected .diff-dots span { border-color: var(--navy); }
+
+  /* slider puntata */
+  .bet-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 16px;
+    border: 2.5px solid var(--navy); border-radius: 99px;
+    background: linear-gradient(90deg, var(--yellow) 0%, var(--coral) 100%);
+    outline: none; cursor: pointer;
+    box-shadow: 2px 2px 0 var(--navy);
+  }
+  .bet-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 30px; height: 30px;
+    background: #fff; border: 3px solid var(--navy);
+    border-radius: 50%; cursor: grab;
+    box-shadow: 2px 2px 0 var(--navy);
+    margin-top: -1px;
+  }
+  .bet-slider::-moz-range-thumb {
+    width: 30px; height: 30px;
+    background: #fff; border: 3px solid var(--navy);
+    border-radius: 50%; cursor: grab;
+    box-shadow: 2px 2px 0 var(--navy);
+  }
+
+  /* radio target squadra */
+  .target-pill {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff;
+    border: 2.5px solid var(--navy); border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 3px 3px 0 var(--navy);
+    transition: all 0.12s;
+    width: 100%; min-height: 56px;
+  }
+  .target-pill:active { transform: translate(1px,1px); box-shadow: 2px 2px 0 var(--navy); }
+  .target-pill.on {
+    background: var(--teal); color: #fff;
+    border-color: var(--navy);
+  }
+  .target-pill.on.open { background: linear-gradient(135deg, var(--teal) 0%, var(--teal-deep) 100%); }
+  .target-radio {
+    width: 22px; height: 22px;
+    border: 2.5px solid var(--navy); border-radius: 50%;
+    background: var(--cream-deep);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .target-pill.on .target-radio { background: var(--coral); }
+  .target-pill.on .target-radio::after {
+    content: ""; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 8px; height: 8px; border-radius: 50%; background: #fff;
+  }
+
+  /* sticky CTA */
+  .cta-sticky-wrap {
+    position: sticky; bottom: 0;
+    margin: 0 -14px;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(251,241,217,0) 0%, rgba(251,241,217,0.95) 30%, var(--cream) 100%);
+    z-index: 20;
+  }
+  .confirm-cta {
+    width: 100%;
+    background: var(--coral); color: #fff;
+    border: 3px solid var(--navy); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--navy);
+    transition: transform 0.12s, box-shadow 0.12s, background 0.18s;
+    font-family: 'Luckiest Guy', cursive; font-size: 24px;
+    padding: 16px 18px; letter-spacing: 0.04em;
+    min-height: 60px;
+  }
+  .confirm-cta:active:not(:disabled) {
+    background: var(--coral-deep);
+    transform: translate(2px,2px); box-shadow: 3px 3px 0 var(--navy);
+  }
+  .confirm-cta:disabled {
+    background: #DDD7C8; color: var(--navy-soft); cursor: not-allowed;
+    box-shadow: 3px 3px 0 var(--navy);
+  }
+
+  .pip { width: 7px; height: 7px; border-radius: 99px; display: inline-block; border: 1.5px solid var(--navy); }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .pip-live { background: var(--green); animation: blink 1.6s ease-in-out infinite; }
+
+  @keyframes nudge {
+    0%,100% { transform: rotate(0); }
+    25% { transform: rotate(-2deg); }
+    75% { transform: rotate(2deg); }
+  }
+  .nudge { animation: nudge 0.8s ease-in-out infinite; transform-origin: center; }
+
+  /* search input */
+  .search-input {
+    background: #fff;
+    border: 2.5px solid var(--navy); border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 14px; font-weight: 500;
+    box-shadow: 3px 3px 0 var(--navy);
+    width: 100%;
+    color: var(--navy);
+  }
+  .search-input::placeholder { color: var(--navy-soft); }
+  .search-input:focus { outline: none; }
+</style>
+</head>
+<body>
+
+<div x-data="capitano()" class="min-h-screen w-full max-w-md mx-auto px-3.5 pt-3 pb-2 flex flex-col gap-3">
+
+  <!-- HEADER mini -->
+  <header class="flex items-center justify-between">
+    <div class="toon toon-sm toon-yellow px-3 py-1.5 -rotate-1">
+      <h1 class="display-font text-lg title-outlined leading-none">IL RIPASSONE!</h1>
+    </div>
+    <span class="display-font text-[11px] uppercase tracking-widest" style="color:var(--navy-soft)">▸ Capitano</span>
+  </header>
+
+  <!-- BANNER "tocca a te" -->
+  <div class="toon toon-coral p-3 nudge text-center">
+    <div class="display-font text-2xl leading-none" style="-webkit-text-stroke: 0.5px var(--navy);">⚡ TOCCA A TE!</div>
+    <div class="text-sm mt-1.5" style="color:#fff;">Scegli una domanda da porre, fissa la puntata e decidi a chi rivolgerla.</div>
+  </div>
+
+  <!-- SQUADRA + punti -->
+  <div class="toon p-3 flex items-center justify-between">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center display-font text-xl flex-shrink-0"
+           :style="`background: ${team.color}; color:#fff; border:2.5px solid var(--navy); box-shadow:3px 3px 0 var(--navy);`">
+        <span x-text="team.name[0]"></span>
+      </div>
+      <div class="min-w-0">
+        <div class="display-font text-lg leading-tight truncate" :style="`color: ${team.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="team.name"></div>
+        <div class="text-xs leading-tight" style="color:var(--navy-soft)">Capitano · <span class="font-semibold" style="color:var(--navy)" x-text="me.name"></span></div>
+      </div>
+    </div>
+    <div class="text-right pl-2">
+      <div class="display-font text-[10px] uppercase leading-none" style="color:var(--navy-soft)">Punti</div>
+      <div class="display-font text-2xl leading-none mt-0.5" x-text="team.score"></div>
+    </div>
+  </div>
+
+  <!-- ████ FILTRI POOL DOMANDE ████ -->
+  <div class="toon p-3 flex flex-col gap-2.5">
+    <div class="flex items-center justify-between">
+      <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Cerca nel pool</span>
+      <span class="text-[11px]" style="color:var(--navy-soft)"><span class="display-font text-base" style="color:var(--navy)" x-text="filteredCount"></span> / <span x-text="poolTotal"></span> domande</span>
+    </div>
+
+    <input type="search" x-model="filters.q" placeholder="🔍 cerca per parola chiave..." class="search-input"/>
+
+    <!-- Lezione -->
+    <div>
+      <div class="display-font text-[10px] uppercase mb-1" style="color:var(--navy-soft)">Lezione</div>
+      <div class="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+        <template x-for="l in lectures" :key="l">
+          <button @click="toggleLecture(l)" class="chip" :class="filters.lectures.includes(l) && 'on'" x-text="l"></button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Difficoltà -->
+    <div>
+      <div class="display-font text-[10px] uppercase mb-1" style="color:var(--navy-soft)">Difficoltà</div>
+      <div class="flex gap-1.5">
+        <button @click="toggleDiff(1)" class="chip diff-1 flex items-center gap-1.5" :class="filters.diff.includes(1) && 'on'">
+          <span class="diff-dots"><span class="on"></span><span></span><span></span></span> Facile
+        </button>
+        <button @click="toggleDiff(2)" class="chip diff-2 flex items-center gap-1.5" :class="filters.diff.includes(2) && 'on'">
+          <span class="diff-dots"><span class="on"></span><span class="on"></span><span></span></span> Media
+        </button>
+        <button @click="toggleDiff(3)" class="chip diff-3 flex items-center gap-1.5" :class="filters.diff.includes(3) && 'on'">
+          <span class="diff-dots"><span class="on"></span><span class="on"></span><span class="on"></span></span> Tosta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ████ LISTA DOMANDE FILTRATE ████ -->
+  <div class="flex flex-col gap-2">
+    <template x-for="q in filteredQuestions" :key="q.id">
+      <button @click="selectedQuestionId = q.id"
+              class="q-card text-left"
+              :class="selectedQuestionId === q.id && 'selected'">
+        <div class="flex items-start justify-between gap-2 mb-1.5">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="mono text-[11px] px-1.5 py-0.5 rounded toon toon-sm" style="background:#fff;" x-text="q.lecture"></span>
+            <span class="diff-dots">
+              <span :class="q.difficulty >= 1 && 'on'"></span>
+              <span :class="q.difficulty >= 2 && 'on'"></span>
+              <span :class="q.difficulty >= 3 && 'on'"></span>
+            </span>
+            <span class="text-[10px] uppercase tracking-wider font-semibold" style="color:var(--navy-soft)" x-text="q.topic"></span>
+          </div>
+          <template x-if="selectedQuestionId === q.id">
+            <span class="display-font text-[11px] px-2 py-0.5 rounded toon toon-sm flex-shrink-0" style="background:var(--coral); color:#fff; box-shadow:2px 2px 0 var(--navy);">SCELTA ✓</span>
+          </template>
+        </div>
+        <div class="text-[14px] font-medium leading-snug" x-text="q.text"></div>
+      </button>
+    </template>
+    <template x-if="filteredQuestions.length === 0">
+      <div class="text-center text-sm py-4" style="color:var(--navy-soft)">
+        Nessuna domanda corrisponde ai filtri.<br/>Pulisci i filtri o prova altre lezioni.
+      </div>
+    </template>
+  </div>
+
+  <!-- ████ POSTA LA DOMANDA: bet + target ████ -->
+  <div class="toon p-3 flex flex-col gap-3 mt-1" :class="!selectedQuestionId && 'opacity-60 pointer-events-none'">
+    <div class="display-font text-sm uppercase" style="color:var(--navy-soft)">⚙ Posta la domanda</div>
+
+    <!-- Slider puntata -->
+    <div>
+      <div class="flex items-baseline justify-between mb-1.5">
+        <span class="display-font text-[11px] uppercase" style="color:var(--navy-soft)">Puntata</span>
+        <span class="flex items-baseline gap-1">
+          <span class="display-font text-2xl leading-none" x-text="bet"></span>
+          <span class="text-xs" style="color:var(--navy-soft)">/ <span x-text="team.score"></span> pt disponibili</span>
+        </span>
+      </div>
+      <input type="range" min="5" :max="team.score" step="5" x-model.number="bet" class="bet-slider"/>
+      <div class="flex justify-between text-[10px] mt-1" style="color:var(--navy-soft)">
+        <span>min 5</span>
+        <span>max <span x-text="team.score"></span></span>
+      </div>
+    </div>
+
+    <!-- Target: aperta a tutti / squadra specifica -->
+    <div>
+      <div class="display-font text-[11px] uppercase mb-1.5" style="color:var(--navy-soft)">Rivolta a</div>
+      <div class="flex flex-col gap-2">
+        <!-- aperta a tutti -->
+        <button @click="target = 'open'" class="target-pill open" :class="target === 'open' && 'on'">
+          <span class="target-radio"></span>
+          <span class="display-font text-base leading-none">⚡ APERTA A TUTTI</span>
+          <span class="ml-auto text-[11px] opacity-90">primo che risponde, blocca</span>
+        </button>
+        <!-- per ogni squadra avversaria -->
+        <template x-for="opp in opponents" :key="opp.id">
+          <button @click="target = opp.id" class="target-pill" :class="target === opp.id && 'on'"
+                  :style="target === opp.id ? `background: ${opp.color}; color: #fff;` : ''">
+            <span class="target-radio"></span>
+            <span class="display-font text-base leading-none" :style="target === opp.id ? '' : `color: ${opp.color}; -webkit-text-stroke: 0.4px var(--navy);`" x-text="opp.name"></span>
+            <span class="ml-auto text-[11px]" :class="target === opp.id ? 'opacity-90' : ''" :style="target === opp.id ? '' : 'color:var(--navy-soft)'" x-text="opp.score + ' pt'"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- footer info compagni -->
+  <div class="text-xs flex items-center justify-between px-1" style="color:var(--navy-soft)">
+    <span><span class="display-font text-base" style="color:var(--navy)" x-text="team.memberCount - 1"></span> compagni di squadra in attesa</span>
+    <span class="flex items-center gap-1.5"><span class="pip pip-live"></span> <span class="font-semibold">live</span></span>
+  </div>
+
+  <!-- ████ STICKY CTA bottom ████ -->
+  <div class="cta-sticky-wrap mt-auto">
+    <button class="confirm-cta"
+            :disabled="!canConfirm"
+            @click="confirm()">
+      <template x-if="!selectedQuestionId">
+        <span>SCEGLI UNA DOMANDA</span>
+      </template>
+      <template x-if="selectedQuestionId && !target">
+        <span>SCEGLI A CHI RIVOLGERLA</span>
+      </template>
+      <template x-if="selectedQuestionId && target && !submitted">
+        <span>LANCIA · <span x-text="bet"></span> pt <span x-text="target === 'open' ? 'a tutti ⚡' : 'a ' + opponents.find(o => o.id === target)?.name"></span></span>
+      </template>
+      <template x-if="submitted">
+        <span>✓ INVIATA · IN ATTESA…</span>
+      </template>
+    </button>
+  </div>
+
+</div>
+
+<script>
+function capitano() {
+  return {
+    me: { id: 'p1', name: 'Marta Rossi' },
+    team: { name: 'I CYBERNAUTI', color: '#D9A52F', score: 185, memberCount: 4 },
+    opponents: [
+      { id: 't3', name: 'LE ALGORITMICHE', color: '#2A8893', score: 220 },
+      { id: 't2', name: 'BIT & BOT',       color: '#E84C3D', score: 140 },
+      { id: 't4', name: 'I PIXELATI',      color: '#9B6BD3', score:  95 },
+    ],
+    /* filtri */
+    filters: {
+      q: '',
+      lectures: [],
+      diff: [],
+    },
+    lectures: ['L01','L02','L03','L04','L05','L06','L07','L08','L09','L10','L11','L12','L13','L14','L15','L16','L17','L18'],
+    /* pool finto */
+    poolTotal: 87,
+    questions: [
+      { id: 1, lecture: 'L11', topic: 'CAD',          difficulty: 2, text: "Quale principio prevede l'art. 64-bis del CAD per l'accesso ai servizi digitali della PA?" },
+      { id: 2, lecture: 'L11', topic: 'SPID',         difficulty: 1, text: "Cosa è SPID e quale livello di sicurezza è richiesto per servizi a basso rischio?" },
+      { id: 3, lecture: 'L09', topic: 'GDPR',         difficulty: 3, text: "In quale circostanza il titolare può trasferire dati personali verso un Paese terzo senza decisione di adeguatezza?" },
+      { id: 4, lecture: 'L05', topic: 'firme digit.', difficulty: 2, text: "Quale tipo di firma elettronica garantisce identificazione univoca del firmatario secondo eIDAS?" },
+      { id: 5, lecture: 'L13', topic: 'PDND',         difficulty: 2, text: "Qual è la differenza fra Catalogo API e Voucher nella PDND?" },
+      { id: 6, lecture: 'L02', topic: 'GAN',          difficulty: 3, text: "In una GAN, qual è il ruolo del generatore rispetto al discriminatore?" },
+      { id: 7, lecture: 'L11', topic: 'CIE/CNS',      difficulty: 1, text: "CIE e CNS sono lo stesso strumento di identità digitale?" },
+    ],
+
+    /* selezione corrente */
+    selectedQuestionId: 1,
+    bet: 50,
+    target: 'open',
+    submitted: false,
+
+    get filteredQuestions() {
+      const q = this.filters.q.toLowerCase().trim();
+      return this.questions.filter(x => {
+        if (this.filters.lectures.length && !this.filters.lectures.includes(x.lecture)) return false;
+        if (this.filters.diff.length && !this.filters.diff.includes(x.difficulty)) return false;
+        if (q && !(x.text.toLowerCase().includes(q) || x.topic.toLowerCase().includes(q))) return false;
+        return true;
+      });
+    },
+    get filteredCount() { return this.filteredQuestions.length; },
+    get canConfirm() { return this.selectedQuestionId && this.target && this.bet >= 5 && !this.submitted; },
+
+    toggleLecture(l) {
+      const i = this.filters.lectures.indexOf(l);
+      if (i >= 0) this.filters.lectures.splice(i, 1);
+      else this.filters.lectures.push(l);
+    },
+    toggleDiff(d) {
+      const i = this.filters.diff.indexOf(d);
+      if (i >= 0) this.filters.diff.splice(i, 1);
+      else this.filters.diff.push(d);
+    },
+    confirm() { if (this.canConfirm) this.submitted = true; },
+  }
+}
+</script>
+</body>
+</html>

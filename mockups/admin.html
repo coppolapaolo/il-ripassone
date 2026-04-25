@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<title>Il Ripassone — Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+  :root {
+    --teal:        #4ABEC8;
+    --teal-deep:   #2A8893;
+    --coral:       #E84C3D;
+    --coral-deep:  #C13E32;
+    --yellow:      #F5C44A;
+    --yellow-deep: #D9A52F;
+    --cream:       #FBF1D9;
+    --cream-deep:  #F5E4C3;
+    --navy:        #1A2D40;
+    --navy-soft:   #2C4665;
+    --pink:        #F89A8E;
+    --green:       #4FB955;
+    --purple:      #9B6BD3;
+    --success:     #2E9F39;
+    --danger:      #E84C3D;
+  }
+  [x-cloak] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Fredoka', sans-serif;
+    color: var(--navy);
+    background: var(--cream);
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(74,190,200,0.12) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(232,76,61,0.08) 0%, transparent 40%),
+      radial-gradient(rgba(26,45,64,0.05) 1.4px, transparent 1.4px);
+    background-size: auto, auto, 18px 18px;
+  }
+  .display-font { font-family: 'Luckiest Guy', cursive; letter-spacing: 0.02em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .toon {
+    background: #fff;
+    border: 3px solid var(--navy);
+    border-radius: 18px;
+    box-shadow: 5px 5px 0 var(--navy);
+  }
+  .toon-sm { box-shadow: 3px 3px 0 var(--navy); border-radius: 12px; border-width: 2.5px; }
+  .toon-yellow { background: var(--yellow); }
+  .toon-coral  { background: var(--coral); color: #fff; }
+  .toon-teal   { background: var(--teal);  color: #fff; }
+  .toon-cream  { background: var(--cream); }
+
+  .title-outlined {
+    color: #fff;
+    -webkit-text-stroke: 2px var(--navy);
+    text-shadow: 3px 3px 0 var(--navy);
+  }
+
+  .pip { width: 7px; height: 7px; border-radius: 99px; display: inline-block; border: 1.5px solid var(--navy); }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .pip-live { background: var(--green); animation: blink 1.6s ease-in-out infinite; }
+
+  /* tab bar */
+  .tab {
+    background: #fff;
+    border: 3px solid var(--navy);
+    border-radius: 14px 14px 0 0;
+    border-bottom: none;
+    padding: 10px 22px;
+    font-family: 'Luckiest Guy', cursive;
+    letter-spacing: 0.04em;
+    color: var(--navy-soft);
+    cursor: pointer;
+    margin-right: 4px;
+    position: relative;
+    bottom: -3px;
+    transition: all 0.12s;
+  }
+  .tab:hover { color: var(--navy); transform: translateY(-1px); }
+  .tab.active {
+    background: var(--yellow);
+    color: var(--navy);
+    bottom: -3px;
+    z-index: 2;
+  }
+
+  /* row squadra in admin */
+  .team-row {
+    display: grid;
+    grid-template-columns: 38px 1fr auto auto auto;
+    gap: 12px; align-items: center;
+    padding: 10px 14px;
+    background: #fff;
+    border: 2.5px solid var(--navy); border-radius: 12px;
+    box-shadow: 3px 3px 0 var(--navy);
+  }
+  .team-row.is-asking    { background: linear-gradient(90deg, rgba(245,196,74,0.20), #fff 60%); }
+  .team-row.is-answering { background: linear-gradient(90deg, rgba(74,190,200,0.20), #fff 60%); }
+  .team-color-chip {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 2.5px solid var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-family: 'Luckiest Guy', cursive; font-size: 18px;
+    box-shadow: 2px 2px 0 var(--navy);
+  }
+
+  /* ring countdown small */
+  .ring-track    { stroke: var(--cream-deep); }
+  .ring-progress { stroke: var(--teal-deep); transition: stroke-dashoffset 1s linear, stroke 0.3s; stroke-linecap: round; }
+  .ring-progress.warn   { stroke: var(--yellow-deep); }
+  .ring-progress.danger { stroke: var(--coral); }
+
+  /* botton azione */
+  .btn-action {
+    background: #fff;
+    border: 2.5px solid var(--navy); border-radius: 12px;
+    padding: 8px 14px;
+    box-shadow: 3px 3px 0 var(--navy);
+    transition: transform 0.12s, box-shadow 0.12s, background 0.18s;
+    font-family: 'Luckiest Guy', cursive; font-size: 14px;
+    color: var(--navy);
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-action:hover { transform: translate(1px,1px); box-shadow: 2px 2px 0 var(--navy); }
+  .btn-action.danger  { background: var(--coral); color: #fff; }
+  .btn-action.success { background: var(--green); color: #fff; }
+  .btn-action.warn    { background: var(--yellow); color: var(--navy); }
+
+  /* event log */
+  .log-item {
+    display: grid; grid-template-columns: 60px 1fr;
+    gap: 10px; padding: 6px 0;
+    border-bottom: 1px dashed rgba(26,45,64,0.15);
+    font-size: 13px;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-item .ts { font-family: 'JetBrains Mono', monospace; color: var(--navy-soft); font-size: 11px; }
+
+  .stat {
+    background: #fff;
+    border: 2.5px solid var(--navy); border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 3px 3px 0 var(--navy);
+  }
+</style>
+</head>
+<body>
+
+<div x-data="admin()" class="min-h-screen flex flex-col p-6 gap-4">
+
+  <!-- ████ HEADER ████ -->
+  <header class="grid items-center gap-6" style="grid-template-columns: auto 1fr auto;">
+    <div class="toon toon-sm toon-yellow px-4 py-2 -rotate-1 flex items-center gap-2">
+      <h1 class="display-font text-2xl title-outlined leading-none">IL RIPASSONE!</h1>
+      <span class="display-font text-xs uppercase ml-2" style="color:var(--navy)">Admin</span>
+    </div>
+
+    <!-- stato server / connessi -->
+    <div class="flex items-center gap-3 ml-auto">
+      <div class="stat flex items-center gap-2">
+        <span class="pip pip-live"></span>
+        <span class="text-xs">Server</span>
+        <span class="display-font text-sm" style="color:var(--success)">ONLINE</span>
+      </div>
+      <div class="stat flex items-center gap-2">
+        <span class="text-xs">Connessi:</span>
+        <span class="display-font text-lg leading-none" x-text="connected"></span>
+      </div>
+      <div class="stat flex items-center gap-2 mono text-xs" style="color:var(--navy-soft)">
+        <span style="color:var(--navy)">▸</span>
+        <span>https://abc1-23.ngrok-free.app</span>
+      </div>
+    </div>
+
+    <!-- pulsante chiudi -->
+    <button class="btn-action danger">⏹ Termina partita</button>
+  </header>
+
+  <!-- ████ TAB BAR ████ -->
+  <nav class="flex items-end" style="border-bottom: 3px solid var(--navy);">
+    <button @click="tab = 'setup'"   class="tab" :class="tab === 'setup'   && 'active'">⚙ Setup</button>
+    <button @click="tab = 'lobby'"   class="tab" :class="tab === 'lobby'   && 'active'">👥 Lobby</button>
+    <button @click="tab = 'game'"    class="tab" :class="tab === 'game'    && 'active'">🎮 Partita</button>
+    <button @click="tab = 'pool'"    class="tab" :class="tab === 'pool'    && 'active'">📚 Pool domande</button>
+  </nav>
+
+  <!-- ████ TAB: PARTITA (in-game dashboard) ████ -->
+  <main x-show="tab === 'game'" class="grid gap-4" style="grid-template-columns: 1fr 380px;">
+
+    <!-- COLONNA SX: stato turno + squadre + azioni -->
+    <section class="flex flex-col gap-4">
+
+      <!-- BAR stato turno corrente -->
+      <div class="toon p-4 grid gap-4 items-center" style="grid-template-columns: auto 1fr auto auto;">
+        <!-- countdown mini -->
+        <div class="relative w-20 h-20 flex-shrink-0">
+          <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="44" stroke-width="9" fill="none" class="ring-track"/>
+            <circle cx="50" cy="50" r="44" stroke-width="9" fill="none"
+                    class="ring-progress" :class="ringClass()"
+                    stroke-dasharray="276.46" :stroke-dashoffset="276.46 * (1 - secondsLeft/totalSeconds)"/>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="display-font tabular-nums text-3xl"
+                  :style="secondsLeft <= 5 ? 'color:var(--coral)' : (secondsLeft <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy)')"
+                  x-text="secondsLeft"></span>
+          </div>
+        </div>
+
+        <!-- info turno -->
+        <div class="flex flex-col gap-1 min-w-0">
+          <div class="display-font text-xs uppercase" style="color:var(--navy-soft)">Turno corrente · Round <span x-text="round"></span>/<span x-text="totalRounds"></span></div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="display-font text-lg" :style="`color: ${askingTeam.color}; -webkit-text-stroke:0.5px var(--navy);`" x-text="askingTeam.name"></span>
+            <span class="text-sm" style="color:var(--navy-soft)">pone</span>
+            <span class="toon-sm toon px-2 py-0.5 toon-yellow display-font text-sm leading-none" x-text="bet + ' pt'"></span>
+            <span class="text-sm" style="color:var(--navy-soft)">a</span>
+            <template x-if="target === 'open'">
+              <span class="display-font text-base" style="color:var(--teal-deep); -webkit-text-stroke:0.4px var(--navy);">APERTA A TUTTI ⚡</span>
+            </template>
+            <template x-if="target !== 'open'">
+              <span class="display-font text-base" :style="`color: ${answeringTeam.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="answeringTeam.name"></span>
+            </template>
+          </div>
+          <div class="text-xs mt-1 truncate" style="color:var(--navy-soft)">
+            <span class="mono" x-text="currentQuestion.lecture"></span> · <span x-text="currentQuestion.text"></span>
+          </div>
+        </div>
+
+        <!-- fase -->
+        <div class="text-center">
+          <div class="display-font text-[10px] uppercase" style="color:var(--navy-soft)">Fase</div>
+          <span class="display-font text-base px-2 py-0.5 toon toon-sm" style="background:var(--teal); color:#fff; box-shadow: 2px 2px 0 var(--navy);" x-text="phaseLabel(phase)"></span>
+        </div>
+
+        <!-- azioni rapide -->
+        <div class="flex flex-col gap-1.5">
+          <button @click="phase = 'reveal'" class="btn-action success">▸ Rivela</button>
+          <button @click="phase = 'next'" class="btn-action warn">⏭ Skip turno</button>
+        </div>
+      </div>
+
+      <!-- LISTA SQUADRE -->
+      <div class="toon p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="display-font text-lg leading-none">Squadre</h2>
+          <span class="text-xs" style="color:var(--navy-soft)"><span class="display-font text-base" style="color:var(--navy)" x-text="teams.length"></span> squadre · <span class="display-font text-base" style="color:var(--navy)" x-text="connected"></span> collegati</span>
+        </div>
+        <div class="flex flex-col gap-2">
+          <template x-for="t in sortedTeams" :key="t.id">
+            <div class="team-row"
+                 :class="t.id === askingTeam.id ? 'is-asking' : (t.id === answeringTeam.id ? 'is-answering' : '')">
+              <div class="team-color-chip" :style="`background: ${t.color}`" x-text="t.name[0]"></div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="display-font text-sm" :style="`color: ${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></span>
+                  <template x-if="t.id === askingTeam.id">
+                    <span class="display-font text-[9px] uppercase px-1.5 py-0.5 rounded" style="background:rgba(245,196,74,0.4); color:var(--navy-soft); border:1.5px solid var(--navy);">PONE</span>
+                  </template>
+                  <template x-if="t.id === answeringTeam.id">
+                    <span class="display-font text-[9px] uppercase px-1.5 py-0.5 rounded" style="background:rgba(74,190,200,0.4); color:var(--navy-soft); border:1.5px solid var(--navy);">RISP</span>
+                  </template>
+                </div>
+                <div class="text-[11px] truncate" style="color:var(--navy-soft)">
+                  Cap. <span class="font-semibold" style="color:var(--navy)" x-text="t.captain"></span> · <span x-text="t.members"></span> membri ·
+                  <span class="inline-flex items-center gap-1"><span class="pip pip-live"></span> <span x-text="t.online + ' online'"></span></span>
+                </div>
+              </div>
+              <!-- punti -->
+              <div class="text-right">
+                <div class="display-font text-2xl tabular-nums leading-none" x-text="t.score"></div>
+                <div class="text-[10px] uppercase" style="color:var(--navy-soft)">pt</div>
+              </div>
+              <!-- aggiusta punti -->
+              <div class="flex items-center gap-1">
+                <button class="btn-action" style="padding:4px 8px;" @click="t.score = Math.max(0, t.score - 10)">−10</button>
+                <button class="btn-action" style="padding:4px 8px;" @click="t.score += 10">+10</button>
+              </div>
+              <!-- altre azioni squadra -->
+              <button class="btn-action" style="padding:4px 8px;">⋯</button>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- CONTROLLI PARTITA -->
+      <div class="toon p-4 flex items-center gap-3">
+        <span class="display-font text-xs uppercase mr-2" style="color:var(--navy-soft)">Azioni partita</span>
+        <button class="btn-action">⏸ Pausa</button>
+        <button class="btn-action warn">⏭ Salta turno</button>
+        <button class="btn-action">↺ Rilancia countdown</button>
+        <button class="btn-action">📊 Esporta classifica</button>
+        <span class="ml-auto text-xs" style="color:var(--navy-soft)">tutte le azioni vengono trasmesse al display + squadre</span>
+      </div>
+
+    </section>
+
+    <!-- COLONNA DX: log eventi -->
+    <aside class="toon p-4 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="display-font text-lg leading-none">📜 Log eventi</h2>
+        <button class="text-[11px] underline" style="color:var(--navy-soft)">pulisci</button>
+      </div>
+      <div class="flex-1 overflow-auto pr-1" style="max-height: 600px;">
+        <template x-for="ev in events" :key="ev.id">
+          <div class="log-item">
+            <span class="ts" x-text="ev.t"></span>
+            <span x-html="ev.msg"></span>
+          </div>
+        </template>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- ████ TAB: SETUP (placeholder, mostrato solo se selezionato) ████ -->
+  <main x-show="tab === 'setup'" x-cloak class="grid gap-4" style="grid-template-columns: 1fr 380px;">
+    <section class="flex flex-col gap-4">
+      <div class="toon p-5">
+        <h2 class="display-font text-xl mb-3">⚙ Parametri quiz</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <label class="flex flex-col gap-1">
+            <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Numero round</span>
+            <input type="number" value="12" class="toon-sm toon px-3 py-2 display-font text-2xl"/>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Tempo per domanda (s)</span>
+            <input type="number" value="30" class="toon-sm toon px-3 py-2 display-font text-2xl"/>
+          </label>
+          <label class="flex flex-col gap-1 col-span-2">
+            <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Punti iniziali · default per squadra</span>
+            <input type="number" value="100" class="toon-sm toon px-3 py-2 display-font text-2xl"/>
+          </label>
+        </div>
+      </div>
+      <div class="toon p-5">
+        <h2 class="display-font text-xl mb-3">📥 Importa pool domande</h2>
+        <div class="toon-sm toon p-6 text-center" style="background:var(--cream); border-style:dashed;">
+          <div class="display-font text-base mb-2">Trascina qui i file Excel</div>
+          <div class="text-xs" style="color:var(--navy-soft)">.xlsx con foglio "Domande" come da template DIPA_L19_compito_template.xlsx</div>
+          <button class="btn-action mt-4">📂 Sfoglia file</button>
+        </div>
+      </div>
+    </section>
+    <aside class="toon p-4">
+      <h2 class="display-font text-lg mb-3">🔐 Password admin</h2>
+      <p class="text-sm" style="color:var(--navy-soft)">Già impostata. Cambia con il pulsante sotto.</p>
+      <button class="btn-action mt-3">🔑 Cambia password</button>
+    </aside>
+  </main>
+
+  <!-- ████ TAB: LOBBY (placeholder) ████ -->
+  <main x-show="tab === 'lobby'" x-cloak class="toon p-6">
+    <h2 class="display-font text-xl mb-3">👥 Lobby pre-partita</h2>
+    <p class="text-sm" style="color:var(--navy-soft)">Vista non sviluppata in questo mockup. Conterrà: squadre in formazione, studenti che entrano, possibilità di forzare un capitano, sorteggio ordine turno.</p>
+  </main>
+
+  <!-- ████ TAB: POOL DOMANDE (placeholder) ████ -->
+  <main x-show="tab === 'pool'" x-cloak class="toon p-6">
+    <h2 class="display-font text-xl mb-3">📚 Pool domande importate</h2>
+    <p class="text-sm" style="color:var(--navy-soft)">Vista non sviluppata in questo mockup. Conterrà: tabella di tutte le domande caricate, filtri per autore (chi le ha proposte), per lezione, possibilità di disabilitare singole domande.</p>
+  </main>
+
+</div>
+
+<script>
+function admin() {
+  return {
+    tab: 'game',
+    connected: 16,
+    round: 3, totalRounds: 12,
+    totalSeconds: 30, secondsLeft: 18,
+    bet: 50,
+    target: 'open',
+    phase: 'question', // setup|question|reveal|next
+    askingTeam:    { id: 't1', name: 'I CYBERNAUTI',    color: '#D9A52F' },
+    answeringTeam: { id: 't3', name: 'LE ALGORITMICHE', color: '#2A8893' },
+    currentQuestion: { lecture: 'L11', text: "Quale principio prevede l'art. 64-bis del CAD per l'accesso ai servizi digitali della PA?" },
+    teams: [
+      { id: 't3', name: 'LE ALGORITMICHE', color: '#2A8893', score: 220, captain: 'Luca Bianchi',  members: 4, online: 4 },
+      { id: 't1', name: 'I CYBERNAUTI',    color: '#D9A52F', score: 185, captain: 'Marta Rossi',   members: 4, online: 4 },
+      { id: 't2', name: 'BIT & BOT',       color: '#E84C3D', score: 140, captain: 'Sara Verdi',    members: 4, online: 3 },
+      { id: 't4', name: 'I PIXELATI',      color: '#9B6BD3', score:  95, captain: 'Davide Neri',   members: 5, online: 5 },
+    ],
+    events: [
+      { id: 1, t: '14:32:18', msg: '🎮 <b>Round 3</b> avviato' },
+      { id: 2, t: '14:32:21', msg: '<span style="color:#D9A52F">I CYBERNAUTI</span> sceglie domanda <span class="mono">L11/CAD</span>, punta <b>50 pt</b>, target <b>aperta a tutti</b>' },
+      { id: 3, t: '14:32:23', msg: '⏱ Countdown 30s avviato' },
+      { id: 4, t: '14:31:45', msg: '<span style="color:#2A8893">LE ALGORITMICHE</span> ha risposto <b>corretto</b> (B) · <span style="color:#2E9F39">+30 pt</span>' },
+      { id: 5, t: '14:31:42', msg: '🔔 Capitano <b>Luca Bianchi</b> ha premuto buzzer' },
+      { id: 6, t: '14:31:15', msg: '<span style="color:#D9A52F">I CYBERNAUTI</span> ha risposto <b>sbagliato</b> (D) · <span style="color:#E84C3D">−20 pt</span>' },
+      { id: 7, t: '14:30:48', msg: '🎮 Round 2 chiuso' },
+      { id: 8, t: '14:30:10', msg: '👤 <b>Tommaso Verdi</b> si è ricollegato (squadra Cybernauti)' },
+      { id: 9, t: '14:29:55', msg: '⏱ Tempo scaduto · nessuna risposta' },
+      { id: 10, t: '14:29:24', msg: '<span style="color:#9B6BD3">I PIXELATI</span> sceglie domanda <span class="mono">L09/GDPR</span>, punta <b>40 pt</b>, target <span style="color:#E84C3D">BIT & BOT</span>' },
+    ],
+
+    get sortedTeams() {
+      return [...this.teams].sort((a,b) => b.score - a.score);
+    },
+    ringClass() {
+      if (this.secondsLeft <= 5) return 'danger';
+      if (this.secondsLeft <= 10) return 'warn';
+      return '';
+    },
+    phaseLabel(p) {
+      return ({ setup:'Setup', question:'Domanda', reveal:'Rivela', next:'→ Prossimo' })[p] || p;
+    },
+    init() {
+      this._timer = setInterval(() => {
+        if (this.phase === 'question' && this.secondsLeft > 0) this.secondsLeft--;
+      }, 1000);
+    },
+  }
+}
+</script>
+</body>
+</html>

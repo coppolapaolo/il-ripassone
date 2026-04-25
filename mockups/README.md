@@ -31,8 +31,10 @@ Branding e palette estratti dal mood-board `assets/hero.png`:
 
 | File | Vista | Note |
 |---|---|---|
-| `display.html` | Schermo pubblico (proiettore) | Domanda dominante, opzioni full-width, countdown fisso |
-| `team_answer.html` | Capitano in fase risposta (mobile-first) | Voti compagni live, CTA risposta cartoon |
+| `display.html` | Schermo pubblico (proiettore) | Hero centrale, domanda dominante, opzioni 2x2, countdown gigante, flash + audio negli ultimi 5s |
+| `team_answer.html` | Capitano in fase risposta (mobile-first) | Voti compagni live, countdown prominente, CTA sticky bottom |
+| `team_choose.html` | Capitano in fase scelta domanda (mobile-first) | Filtri pool (lezione/difficoltà/ricerca), slider puntata, target radio, CTA sticky |
+| `admin.html` | Dashboard admin (desktop) | Tab bar (Setup/Lobby/Partita/Pool), in-game con squadre + countdown + log eventi |
 
 ## Interazioni dimostrative
 
