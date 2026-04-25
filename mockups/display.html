@@ -93,6 +93,24 @@
   .ring-progress.danger { stroke: var(--coral); animation: pulse 0.7s ease-in-out infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.97); } }
 
+  /* Countdown grande del display (drammatico) */
+  .cd-ring { background: #fff; transition: all 0.3s; }
+  .countdown-display.cd-warn   .cd-ring { background: linear-gradient(135deg, #FFF7E0 0%, #FBF1D9 100%); }
+  .countdown-display.cd-danger .cd-ring {
+    background: linear-gradient(135deg, #FFE4E0 0%, #FFD0CB 100%);
+    border-color: var(--coral);
+    box-shadow: 8px 8px 0 var(--coral);
+    animation: cdShake 0.5s ease-in-out infinite;
+  }
+  @keyframes cdShake {
+    0%,100% { transform: translateX(0) rotate(0); }
+    25%     { transform: translateX(-3px) rotate(-1deg); }
+    75%     { transform: translateX(3px) rotate(1deg); }
+  }
+  .countdown-display.cd-warn   { animation: cdScale 1s ease-in-out infinite; }
+  .countdown-display.cd-danger { animation: cdScale 0.7s ease-in-out infinite; }
+  @keyframes cdScale { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
   /* Score bump */
   @keyframes scoreUp {
     0%   { transform: translateY(0) scale(1); color: var(--navy); }
@@ -186,21 +204,28 @@
       <span class="display-font text-2xl leading-none" x-text="totalRounds"></span>
     </div>
 
-    <!-- Countdown -->
-    <div class="flex items-center gap-3">
+    <!-- Countdown — grande, drammatico, sempre visibile -->
+    <div class="countdown-display flex items-center gap-4"
+         :class="secondsLeft <= 5 ? 'cd-danger' : (secondsLeft <= 10 ? 'cd-warn' : '')">
+      <!-- label colonna -->
       <div class="text-right">
-        <div class="display-font text-xs uppercase" :style="secondsLeft <= 5 && 'color:var(--coral)'">Tempo</div>
-        <div class="text-xs text-[var(--navy-soft)] mt-0.5" x-text="totalSeconds + 's totali'"></div>
+        <div class="display-font text-2xl uppercase leading-none"
+             :style="secondsLeft <= 5 ? 'color:var(--coral)' : (secondsLeft <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy-soft)')">
+          <span x-show="secondsLeft > 5">⏱ Tempo!</span>
+          <span x-show="secondsLeft <= 5" class="display-font text-2xl">⚠ Forza!</span>
+        </div>
+        <div class="text-sm text-[var(--navy-soft)] mt-1.5" x-text="'Su ' + totalSeconds + ' s totali'"></div>
       </div>
-      <div class="toon toon-sm w-28 h-28 flex items-center justify-center relative bg-white">
-        <svg class="absolute inset-1.5 -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="42" stroke-width="9" fill="none" class="ring-track"/>
-          <circle cx="50" cy="50" r="42" stroke-width="9" fill="none"
+      <!-- ring grande -->
+      <div class="cd-ring w-44 h-44 relative flex items-center justify-center toon">
+        <svg class="absolute inset-2 -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" stroke-width="9" fill="none" class="ring-track"/>
+          <circle cx="50" cy="50" r="44" stroke-width="11" fill="none"
                   class="ring-progress" :class="ringClass()"
-                  stroke-dasharray="263.89" :stroke-dashoffset="263.89 * (1 - secondsLeft/totalSeconds)"/>
+                  stroke-dasharray="276.46" :stroke-dashoffset="276.46 * (1 - secondsLeft/totalSeconds)"/>
         </svg>
-        <span class="display-font tabular-nums text-5xl leading-none relative"
-              :style="secondsLeft <= 5 ? 'color:var(--coral)' : (secondsLeft <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy)')"
+        <span class="display-font tabular-nums leading-none relative"
+              :style="secondsLeft <= 5 ? 'color:var(--coral); font-size:104px;' : (secondsLeft <= 10 ? 'color:var(--yellow-deep); font-size:104px;' : 'color:var(--navy); font-size:104px;')"
               x-text="secondsLeft"></span>
       </div>
     </div>

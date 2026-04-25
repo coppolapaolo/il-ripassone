@@ -2,6 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF1D9">
 <title>Il Ripassone — Capitano · Rispondi</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,10 +35,12 @@
     color: var(--navy);
     background: var(--cream);
     background-image:
-      radial-gradient(circle at 0% 0%, rgba(74,190,200,0.18) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(232,76,61,0.12) 0%, transparent 45%),
+      radial-gradient(circle at 0% 0%, rgba(74,190,200,0.20) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(232,76,61,0.14) 0%, transparent 45%),
       radial-gradient(rgba(26,45,64,0.06) 1.4px, transparent 1.4px);
     background-size: auto, auto, 18px 18px;
+    /* support iPhone safe-area */
+    padding-top: env(safe-area-inset-top);
   }
   .display-font { font-family: 'Luckiest Guy', cursive; letter-spacing: 0.02em; }
   .mono { font-family: 'JetBrains Mono', monospace; }
@@ -52,13 +56,46 @@
   .toon-coral  { background: var(--coral); color: #fff; }
   .toon-teal   { background: var(--teal);  color: #fff; }
   .toon-cream  { background: var(--cream); }
-  .toon-white  { background: #fff; }
 
   .title-outlined {
     color: #fff;
     -webkit-text-stroke: 2px var(--navy);
     text-shadow: 3px 3px 0 var(--navy);
   }
+
+  /* ======== COUNTDOWN — sezione PROMINENTE ======== */
+  .countdown-section {
+    background: #fff;
+    border: 3px solid var(--navy);
+    border-radius: 22px;
+    box-shadow: 6px 6px 0 var(--navy);
+    padding: 18px 18px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 18px;
+    align-items: center;
+    transition: all 0.3s;
+  }
+  .countdown-section.warn {
+    background: linear-gradient(135deg, #FFF7E0 0%, #FBF1D9 100%);
+  }
+  .countdown-section.danger {
+    background: linear-gradient(135deg, #FFE4E0 0%, #FFD0CB 100%);
+    border-color: var(--coral);
+    box-shadow: 6px 6px 0 var(--coral);
+    animation: shake 0.5s ease-in-out infinite;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+  }
+
+  .ring-track    { stroke: var(--cream-deep); }
+  .ring-progress { stroke: var(--teal-deep); transition: stroke-dashoffset 1s linear, stroke 0.3s; stroke-linecap: round; }
+  .ring-progress.warn   { stroke: var(--yellow-deep); }
+  .ring-progress.danger { stroke: var(--coral); animation: pulse 0.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 
   /* opzioni */
   .opt-btn {
@@ -67,43 +104,47 @@
     border-radius: 14px;
     box-shadow: 4px 4px 0 var(--navy);
     transition: transform 0.12s, box-shadow 0.12s, background 0.18s;
-    text-align: left; padding: 14px 16px;
-    display: flex; align-items: center; gap: 14px;
+    text-align: left; padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
     width: 100%;
+    min-height: 64px; /* tap target generoso */
   }
-  .opt-btn:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--navy); }
+  .opt-btn:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--navy); }
   .opt-btn.selected {
     background: var(--yellow);
   }
   .opt-letter {
-    width: 52px; height: 52px;
+    width: 48px; height: 48px;
     background: var(--cream-deep); color: var(--navy);
     border: 2.5px solid var(--navy); border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Luckiest Guy', cursive; font-size: 28px;
+    font-family: 'Luckiest Guy', cursive; font-size: 26px;
     flex-shrink: 0;
   }
   .opt-btn.selected .opt-letter {
     background: var(--coral); color: #fff;
   }
 
-  /* countdown */
-  .ring-track    { stroke: var(--cream-deep); }
-  .ring-progress { stroke: var(--teal-deep); transition: stroke-dashoffset 1s linear, stroke 0.3s; stroke-linecap: round; }
-  .ring-progress.warn   { stroke: var(--yellow-deep); }
-  .ring-progress.danger { stroke: var(--coral); animation: pulse 0.6s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
-
-  /* CTA */
+  /* ======== STICKY CTA bottom ======== */
+  .cta-sticky-wrap {
+    position: sticky;
+    bottom: 0;
+    margin: 0 -14px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(251,241,217,0) 0%, rgba(251,241,217,0.95) 30%, var(--cream) 100%);
+    z-index: 20;
+  }
   .answer-cta {
+    width: 100%;
     background: var(--coral); color: #fff;
     border: 3px solid var(--navy); border-radius: 18px;
     box-shadow: 6px 6px 0 var(--navy);
     transition: transform 0.12s, box-shadow 0.12s, background 0.18s;
-    font-family: 'Luckiest Guy', cursive; font-size: 28px;
-    padding: 18px 24px; letter-spacing: 0.04em;
+    font-family: 'Luckiest Guy', cursive; font-size: 26px;
+    padding: 16px 18px; letter-spacing: 0.04em;
+    min-height: 60px;
   }
-  .answer-cta:hover:not(:disabled) {
+  .answer-cta:active:not(:disabled) {
     background: var(--coral-deep);
     transform: translate(2px,2px); box-shadow: 3px 3px 0 var(--navy);
   }
@@ -122,10 +163,8 @@
     box-shadow: 2px 2px 0 var(--navy);
     padding: 2px 9px;
     font-size: 11px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
   }
-
-  /* danger frame ultimi 5s — sobria */
-  .danger-frame .header-card { border-color: var(--coral) !important; box-shadow: 5px 5px 0 var(--coral) !important; }
 
   .pip { width: 7px; height: 7px; border-radius: 99px; display: inline-block; border: 1.5px solid var(--navy); }
   @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -134,85 +173,95 @@
 </head>
 <body>
 
-<div x-data="capitano()" class="min-h-screen max-w-xl mx-auto px-4 py-4 flex flex-col gap-3"
-     :class="secondsLeft <= 5 && 'danger-frame'">
+<div x-data="capitano()" class="min-h-screen w-full max-w-md mx-auto px-3.5 pt-3 pb-2 flex flex-col gap-3">
 
   <!-- HEADER mini -->
   <header class="flex items-center justify-between">
     <div class="toon toon-sm toon-yellow px-3 py-1.5 -rotate-1">
-      <h1 class="display-font text-xl title-outlined leading-none">IL RIPASSONE!</h1>
+      <h1 class="display-font text-lg title-outlined leading-none">IL RIPASSONE!</h1>
     </div>
-    <span class="display-font text-xs uppercase tracking-widest" style="color:var(--navy-soft)">Capitano</span>
+    <span class="display-font text-[11px] uppercase tracking-widest" style="color:var(--navy-soft)">▸ Capitano</span>
   </header>
 
   <!-- SQUADRA -->
-  <div class="toon header-card p-4 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center display-font text-2xl flex-shrink-0"
+  <div class="toon p-3 flex items-center justify-between">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center display-font text-xl flex-shrink-0"
            :style="`background: ${team.color}; color: #fff; border: 2.5px solid var(--navy); box-shadow: 3px 3px 0 var(--navy);`">
         <span x-text="team.name[0]"></span>
       </div>
-      <div>
-        <div class="display-font text-xl leading-tight" :style="`color: ${team.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="team.name"></div>
-        <div class="text-xs mt-0.5" style="color:var(--navy-soft)">
+      <div class="min-w-0">
+        <div class="display-font text-lg leading-tight truncate" :style="`color: ${team.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="team.name"></div>
+        <div class="text-xs leading-tight" style="color:var(--navy-soft)">
           <span class="font-semibold" style="color:var(--navy)" x-text="me.name"></span>
         </div>
       </div>
     </div>
-    <div class="text-right">
-      <div class="display-font text-xs uppercase" style="color:var(--navy-soft)">Punti</div>
-      <div class="display-font text-3xl leading-none" x-text="team.score"></div>
+    <div class="text-right pl-2">
+      <div class="display-font text-[10px] uppercase leading-none" style="color:var(--navy-soft)">Punti</div>
+      <div class="display-font text-2xl leading-none mt-0.5" x-text="team.score"></div>
+    </div>
+  </div>
+
+  <!-- ████████████████████████████████████████████████████ -->
+  <!-- ███ COUNTDOWN — sezione DOMINANTE, mai persa ████ -->
+  <!-- ████████████████████████████████████████████████████ -->
+  <div class="countdown-section"
+       :class="secondsLeft <= 5 ? 'danger' : (secondsLeft <= 10 ? 'warn' : '')">
+    <!-- ring grande -->
+    <div class="relative w-[128px] h-[128px] flex-shrink-0">
+      <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="44" stroke-width="9" fill="none" class="ring-track"/>
+        <circle cx="50" cy="50" r="44" stroke-width="10" fill="none"
+                class="ring-progress" :class="ringClass()"
+                stroke-dasharray="276.46" :stroke-dashoffset="276.46 * (1 - secondsLeft/totalSeconds)"/>
+      </svg>
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        <span class="display-font tabular-nums leading-none" style="font-size:64px;"
+              :style="secondsLeft <= 5 ? 'color:var(--coral); font-size:64px;' : (secondsLeft <= 10 ? 'color:var(--yellow-deep); font-size:64px;' : 'color:var(--navy); font-size:64px;')"
+              x-text="secondsLeft"></span>
+        <span class="text-[10px] font-bold uppercase tracking-widest mt-0.5" style="color:var(--navy-soft)">secondi</span>
+      </div>
+    </div>
+    <!-- info contesto countdown -->
+    <div class="flex flex-col gap-1.5 min-w-0">
+      <div class="display-font text-base leading-none uppercase"
+           :style="secondsLeft <= 5 ? 'color:var(--coral)' : 'color:var(--yellow-deep)'">
+        <span x-show="secondsLeft > 5">⏱ Tempo rimanente</span>
+        <span x-show="secondsLeft <= 5">⚠ ULTIMI SECONDI!</span>
+      </div>
+      <template x-if="question.target === 'open'">
+        <div>
+          <div class="display-font text-lg leading-none mt-1" style="color:var(--teal-deep); -webkit-text-stroke: 0.5px var(--navy);">APERTA A TUTTI ⚡</div>
+          <div class="text-[11px] mt-1" style="color:var(--navy-soft)">primo che risponde, blocca le altre</div>
+        </div>
+      </template>
+      <template x-if="question.target === 'me'">
+        <div>
+          <div class="display-font text-lg leading-none mt-1" style="color:var(--coral); -webkit-text-stroke: 0.5px var(--navy);">A TE!</div>
+          <div class="text-[11px] mt-1" style="color:var(--navy-soft)">domanda diretta alla tua squadra</div>
+        </div>
+      </template>
+      <div class="flex items-center gap-2 mt-1">
+        <span class="display-font text-[10px] uppercase" style="color:var(--navy-soft)">In palio</span>
+        <span class="toon-sm toon px-2 py-0.5 toon-yellow display-font text-base leading-none" x-text="question.bet + ' pt'"></span>
+      </div>
     </div>
   </div>
 
   <!-- META domanda -->
-  <div class="grid grid-cols-3 gap-2">
-    <div class="toon toon-sm px-3 py-2 text-center">
-      <div class="display-font text-[10px] uppercase" style="color:var(--navy-soft)">Da</div>
-      <div class="display-font text-sm leading-tight mt-0.5" :style="`color: ${question.askedBy.color}; -webkit-text-stroke: 0.5px var(--navy);`" x-text="question.askedBy.name"></div>
+  <div class="flex items-center justify-between gap-2 px-1">
+    <div class="flex items-center gap-1.5 text-xs min-w-0" style="color:var(--navy-soft)">
+      <span class="display-font text-[10px] uppercase">Da</span>
+      <span class="display-font text-sm truncate" :style="`color: ${question.askedBy.color}; -webkit-text-stroke: 0.4px var(--navy);`" x-text="question.askedBy.name"></span>
     </div>
-    <div class="toon toon-sm toon-yellow px-3 py-2 text-center">
-      <div class="display-font text-[10px] uppercase">In palio</div>
-      <div class="display-font text-2xl leading-none mt-0.5" x-text="question.bet"></div>
-    </div>
-    <div class="toon toon-sm px-3 py-2 text-center">
-      <div class="display-font text-[10px] uppercase" style="color:var(--navy-soft)">Lezione</div>
-      <div class="mono text-sm font-bold mt-0.5" style="color:var(--navy)" x-text="question.lecture"></div>
-    </div>
+    <span class="mono text-[11px] px-2 py-0.5 toon toon-sm" style="background:#fff; flex-shrink:0;" x-text="question.lecture"></span>
   </div>
 
-  <!-- COUNTDOWN + indicazione target -->
-  <div class="toon p-3 flex items-center gap-3">
-    <div class="relative w-20 h-20 flex-shrink-0">
-      <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="44" stroke-width="7" fill="none" class="ring-track"/>
-        <circle cx="50" cy="50" r="44" stroke-width="8" fill="none"
-                class="ring-progress" :class="ringClass()"
-                stroke-dasharray="276.46" :stroke-dashoffset="276.46 * (1 - secondsLeft/totalSeconds)"/>
-      </svg>
-      <div class="absolute inset-0 flex items-center justify-center">
-        <span class="display-font tabular-nums text-3xl"
-              :style="secondsLeft <= 5 ? 'color:var(--coral)' : (secondsLeft <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy)')"
-              x-text="secondsLeft"></span>
-      </div>
-    </div>
-    <div class="flex-1">
-      <div class="display-font text-xs uppercase" style="color:var(--navy-soft)">Tempo per rispondere</div>
-      <div class="text-sm mt-1" style="color:var(--navy)">
-        <template x-if="question.target === 'open'">
-          <span><span class="display-font text-base" style="color:var(--teal-deep); -webkit-text-stroke: 0.4px var(--navy);">APERTA A TUTTI ⚡</span><br><span class="text-xs" style="color:var(--navy-soft)">primo che risponde, blocca le altre</span></span>
-        </template>
-        <template x-if="question.target === 'me'">
-          <span><span class="display-font text-base" style="color:var(--coral); -webkit-text-stroke: 0.4px var(--navy);">A TE!</span><br><span class="text-xs" style="color:var(--navy-soft)">domanda diretta alla tua squadra</span></span>
-        </template>
-      </div>
-    </div>
-  </div>
-
-  <!-- DOMANDA — più spazio, font display -->
-  <div class="toon p-5">
-    <div class="display-font text-[10px] uppercase mb-2 px-2 py-1 inline-block toon toon-sm toon-coral" style="box-shadow: 2px 2px 0 var(--navy);">DOMANDA</div>
-    <p class="display-font leading-tight" style="font-size: clamp(20px, 5vw, 26px); color: var(--navy);" x-text="question.text"></p>
+  <!-- DOMANDA -->
+  <div class="toon p-4">
+    <div class="display-font text-[10px] uppercase mb-2 px-2 py-0.5 inline-block toon toon-sm toon-coral" style="box-shadow: 2px 2px 0 var(--navy);">DOMANDA</div>
+    <p class="display-font leading-tight" style="font-size:22px; color: var(--navy);" x-text="question.text"></p>
   </div>
 
   <!-- OPZIONI -->
@@ -222,11 +271,11 @@
               class="opt-btn"
               :class="selected === opt.letter && 'selected'">
         <div class="opt-letter" x-text="opt.letter"></div>
-        <div class="flex-1">
-          <div class="text-base font-medium leading-snug" x-text="opt.text"></div>
-          <div class="flex flex-wrap gap-1.5 mt-2" x-show="votesFor(opt.letter).length">
+        <div class="flex-1 min-w-0">
+          <div class="text-[15px] font-medium leading-snug" x-text="opt.text"></div>
+          <div class="flex flex-wrap gap-1.5 mt-1.5" x-show="votesFor(opt.letter).length">
             <template x-for="v in votesFor(opt.letter)" :key="v.id">
-              <span class="vote-chip flex items-center gap-1.5">
+              <span class="vote-chip">
                 <span class="w-1.5 h-1.5 rounded-full" style="background:var(--green)"></span>
                 <span x-text="v.name"></span>
               </span>
@@ -234,25 +283,29 @@
           </div>
         </div>
         <template x-if="votesFor(opt.letter).length">
-          <span class="display-font text-xl flex-shrink-0" style="color:var(--success); -webkit-text-stroke: 0.4px var(--navy);" x-text="votesFor(opt.letter).length"></span>
+          <span class="display-font text-lg flex-shrink-0" style="color:var(--success); -webkit-text-stroke: 0.4px var(--navy);" x-text="votesFor(opt.letter).length"></span>
         </template>
       </button>
     </template>
   </div>
 
-  <!-- CTA -->
-  <button class="answer-cta mt-1"
-          :class="submitted && 'submitted'"
-          :disabled="!selected || submitted"
-          @click="submit()">
-    <span x-show="!submitted">RISPONDI · <span x-text="selected || '—'"></span></span>
-    <span x-show="submitted">✓ INVIATA · ATTENDI…</span>
-  </button>
-
   <!-- FOOTER live voti -->
-  <div class="toon toon-sm px-3 py-2 text-xs flex items-center justify-between" style="color:var(--navy-soft)">
+  <div class="text-xs flex items-center justify-between px-1" style="color:var(--navy-soft)">
     <span><span class="display-font text-base" style="color:var(--navy)" x-text="memberVotes.length"></span><span class="opacity-50">/</span><span x-text="team.memberCount - 1"></span> compagni hanno votato</span>
     <span class="flex items-center gap-1.5"><span class="pip pip-live"></span> <span class="font-semibold">live</span></span>
+  </div>
+
+  <!-- ████████████████████████████████████████████████████ -->
+  <!-- ███ STICKY CTA bottom — sempre raggiungibile ████ -->
+  <!-- ████████████████████████████████████████████████████ -->
+  <div class="cta-sticky-wrap mt-auto">
+    <button class="answer-cta"
+            :class="submitted && 'submitted'"
+            :disabled="!selected || submitted"
+            @click="submit()">
+      <span x-show="!submitted">RISPONDI · <span x-text="selected || '—'"></span></span>
+      <span x-show="submitted">✓ INVIATA · ATTENDI…</span>
+    </button>
   </div>
 
 </div>
