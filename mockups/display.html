@@ -28,6 +28,7 @@
     --danger:      #E84C3D;
   }
 
+  [x-cloak] { display: none !important; }
   html, body { height: 100%; }
   body {
     font-family: 'Fredoka', sans-serif;
@@ -99,17 +100,65 @@
   .countdown-display.cd-danger .cd-ring {
     background: linear-gradient(135deg, #FFE4E0 0%, #FFD0CB 100%);
     border-color: var(--coral);
-    box-shadow: 8px 8px 0 var(--coral);
+    box-shadow: 10px 10px 0 var(--coral);
     animation: cdShake 0.5s ease-in-out infinite;
   }
   @keyframes cdShake {
     0%,100% { transform: translateX(0) rotate(0); }
-    25%     { transform: translateX(-3px) rotate(-1deg); }
-    75%     { transform: translateX(3px) rotate(1deg); }
+    25%     { transform: translateX(-4px) rotate(-1deg); }
+    75%     { transform: translateX(4px) rotate(1deg); }
   }
   .countdown-display.cd-warn   { animation: cdScale 1s ease-in-out infinite; }
-  .countdown-display.cd-danger { animation: cdScale 0.7s ease-in-out infinite; }
-  @keyframes cdScale { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+  .countdown-display.cd-danger { animation: cdScale 0.6s ease-in-out infinite; }
+  @keyframes cdScale { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  /* battito del numero ad ogni secondo */
+  .cd-number { animation: cdNumberPulse 1s ease-in-out infinite; transform-origin: center; }
+  @keyframes cdNumberPulse { 0%,100% { transform: scale(1); } 8% { transform: scale(1.08); } 25% { transform: scale(1); } }
+
+  /* ======== FLASH OVERLAY full-screen (alarm) ======== */
+  .flash-overlay {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    background: var(--coral);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .flash-overlay.active {
+    animation: flashPulse 0.6s ease-in-out infinite;
+  }
+  @keyframes flashPulse {
+    0%, 100% { opacity: 0; }
+    50%      { opacity: 0.22; }
+  }
+
+  /* ======== AUDIO GATE iniziale ======== */
+  .audio-gate {
+    position: fixed; inset: 0;
+    z-index: 100;
+    background: rgba(26, 45, 64, 0.92);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .audio-gate-card {
+    background: var(--cream);
+    border: 4px solid var(--navy);
+    border-radius: 28px;
+    box-shadow: 12px 12px 0 var(--coral);
+    padding: 56px 64px;
+    text-align: center;
+    transform: rotate(-1.5deg);
+  }
+  .gate-cta {
+    background: var(--coral); color: #fff;
+    border: 3px solid var(--navy); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--navy);
+    font-family: 'Luckiest Guy', cursive; font-size: 38px;
+    padding: 18px 44px; letter-spacing: 0.05em;
+    transition: transform 0.12s, box-shadow 0.12s;
+    cursor: pointer;
+  }
+  .gate-cta:hover { transform: translate(3px,3px); box-shadow: 3px 3px 0 var(--navy); background: var(--coral-deep); }
 
   /* Score bump */
   @keyframes scoreUp {
@@ -186,6 +235,23 @@
 
 <div x-data="display()" class="min-h-screen flex flex-col p-6 gap-4">
 
+  <!-- ███ FLASH OVERLAY full-screen (ultimi 5 secondi) ███ -->
+  <div class="flash-overlay" :class="(secondsLeft <= 5 && phase === 'question' && secondsLeft > 0) && 'active'"></div>
+
+  <!-- ███ AUDIO GATE iniziale (sblocca AudioContext) ███ -->
+  <div x-show="!audioReady" class="audio-gate" x-cloak>
+    <div class="audio-gate-card">
+      <div class="display-font text-6xl title-outlined leading-none mb-3">IL RIPASSONE!</div>
+      <p class="text-xl mb-7 mt-5" style="color:var(--navy)">
+        Clicca per attivare audio<br/>e iniziare il quiz
+      </p>
+      <button class="gate-cta" @click="enableAudio()">▶ AVVIA</button>
+      <div class="text-xs mt-5" style="color:var(--navy-soft)">
+        (richiesto dal browser per sbloccare l'audio)
+      </div>
+    </div>
+  </div>
+
   <!-- HEADER: hero compatto + round + countdown -->
   <header class="flex items-center justify-between gap-6">
     <!-- Brand: titolo cartoon CSS (no immagine, scala perfetto) -->
@@ -204,28 +270,28 @@
       <span class="display-font text-2xl leading-none" x-text="totalRounds"></span>
     </div>
 
-    <!-- Countdown — grande, drammatico, sempre visibile -->
-    <div class="countdown-display flex items-center gap-4"
+    <!-- Countdown — DOMINANTE, sempre visibile da fondo aula -->
+    <div class="countdown-display flex items-center gap-5"
          :class="secondsLeft <= 5 ? 'cd-danger' : (secondsLeft <= 10 ? 'cd-warn' : '')">
       <!-- label colonna -->
       <div class="text-right">
-        <div class="display-font text-2xl uppercase leading-none"
+        <div class="display-font text-3xl uppercase leading-none"
              :style="secondsLeft <= 5 ? 'color:var(--coral)' : (secondsLeft <= 10 ? 'color:var(--yellow-deep)' : 'color:var(--navy-soft)')">
           <span x-show="secondsLeft > 5">⏱ Tempo!</span>
-          <span x-show="secondsLeft <= 5" class="display-font text-2xl">⚠ Forza!</span>
+          <span x-show="secondsLeft <= 5" class="display-font text-4xl">⚠ Forza!</span>
         </div>
-        <div class="text-sm text-[var(--navy-soft)] mt-1.5" x-text="'Su ' + totalSeconds + ' s totali'"></div>
+        <div class="text-base text-[var(--navy-soft)] mt-2" x-text="'Su ' + totalSeconds + ' s totali'"></div>
       </div>
-      <!-- ring grande -->
-      <div class="cd-ring w-44 h-44 relative flex items-center justify-center toon">
-        <svg class="absolute inset-2 -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="44" stroke-width="9" fill="none" class="ring-track"/>
-          <circle cx="50" cy="50" r="44" stroke-width="11" fill="none"
+      <!-- ring GIGANTE -->
+      <div class="cd-ring w-[220px] h-[220px] relative flex items-center justify-center toon">
+        <svg class="absolute inset-3 -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" stroke-width="10" fill="none" class="ring-track"/>
+          <circle cx="50" cy="50" r="44" stroke-width="12" fill="none"
                   class="ring-progress" :class="ringClass()"
                   stroke-dasharray="276.46" :stroke-dashoffset="276.46 * (1 - secondsLeft/totalSeconds)"/>
         </svg>
-        <span class="display-font tabular-nums leading-none relative"
-              :style="secondsLeft <= 5 ? 'color:var(--coral); font-size:104px;' : (secondsLeft <= 10 ? 'color:var(--yellow-deep); font-size:104px;' : 'color:var(--navy); font-size:104px;')"
+        <span class="cd-number display-font tabular-nums leading-none relative"
+              :style="secondsLeft <= 5 ? 'color:var(--coral); font-size:152px;' : (secondsLeft <= 10 ? 'color:var(--yellow-deep); font-size:152px;' : 'color:var(--navy); font-size:152px;')"
               x-text="secondsLeft"></span>
       </div>
     </div>
@@ -337,8 +403,11 @@
        question→reveal e il reset countdown sono triggered dal
        server (timer scade o un capitano risponde). -->
   <div class="fixed bottom-3 right-3 z-40 flex items-center gap-2 toon p-2.5 pl-3"
-       style="background: rgba(255,255,255,0.96); border-style: dashed; opacity: 0.85;">
+       style="background: rgba(255,255,255,0.96); border-style: dashed; opacity: 0.92;">
     <span class="display-font text-[10px] uppercase tracking-widest" style="color:var(--navy-soft)">▾ Demo · solo mockup</span>
+    <button @click="muted = !muted" class="btn-toon text-xs" :title="muted ? 'Riattiva audio' : 'Silenzia audio'">
+      <span x-show="!muted">🔊</span><span x-show="muted">🔇</span>
+    </button>
     <button @click="reveal()" class="btn-toon text-xs">▸ Reveal</button>
     <button @click="reset()" class="btn-toon text-xs">↻ Reset</button>
   </div>
@@ -346,11 +415,58 @@
 </div>
 
 <script>
+/* ============================================================
+   AUDIO procedurale (Web Audio API).
+   Suoni generati al volo, niente file da scaricare.
+   Va sbloccato da una user-gesture (autoplay policy del browser).
+   ============================================================ */
+const RipassoneAudio = {
+  ctx: null,
+  enabled: false,
+  enable() {
+    if (this.enabled) return;
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    this.enabled = true;
+  },
+  /* tono di base con envelope ADSR semplificato */
+  tone(freq, duration, type = 'sine', volume = 0.18, attack = 0.005) {
+    if (!this.enabled || !this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.frequency.value = freq;
+    osc.type = type;
+    const t0 = this.ctx.currentTime;
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(volume, t0 + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(gain).connect(this.ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.05);
+  },
+  tick()    { this.tone(1200, 0.06, 'square',   0.10); },
+  warn()    { this.tone(1500, 0.10, 'square',   0.16); },
+  timeUp() {
+    this.tone(220, 0.5, 'sawtooth', 0.22);
+    setTimeout(() => this.tone(150, 0.7, 'sawtooth', 0.22), 280);
+  },
+  ding() {
+    /* accordo Do maggiore arpeggiato (C5, E5, G5) */
+    [523.25, 659.25, 783.99].forEach((f, i) => {
+      setTimeout(() => this.tone(f, 0.7, 'sine', 0.18), i * 60);
+    });
+  },
+};
+
 function display() {
   return {
     phase: 'question',
     round: 3, totalRounds: 12,
     totalSeconds: 30, secondsLeft: 18,
+
+    /* ── audio ── */
+    audioReady: false,
+    muted: false,
+
     askingTeam: { id: 't1', name: 'I CYBERNAUTI', color: '#E8A93C', captain: 'Marta Rossi' },
     answeringTeam: { id: 't3', name: 'LE ALGORITMICHE', color: '#4ABEC8', captain: 'Luca Bianchi' },
     teams: [
@@ -370,13 +486,27 @@ function display() {
       ],
       correct: 'B',
     },
+
+    enableAudio() {
+      RipassoneAudio.enable();
+      this.audioReady = true;
+    },
+    play(name) {
+      if (this.muted) return;
+      RipassoneAudio[name]?.();
+    },
+
     init() {
       this._timer = setInterval(() => {
-        if (this.phase === 'question' && this.secondsLeft > 0) this.secondsLeft--;
+        if (this.phase !== 'question' || this.secondsLeft <= 0) return;
+        this.secondsLeft--;
+        if (this.secondsLeft === 0)            this.play('timeUp');
+        else if (this.secondsLeft <= 5)        this.play('warn');
+        else if (this.secondsLeft <= 10)       this.play('tick');
       }, 1000);
     },
-    reveal() { this.phase = 'reveal'; },
-    reset() { this.secondsLeft = this.totalSeconds; this.phase = 'question'; },
+    reveal() { this.phase = 'reveal'; this.play('ding'); },
+    reset()  { this.secondsLeft = this.totalSeconds; this.phase = 'question'; },
     ringClass() {
       if (this.secondsLeft <= 5) return 'danger';
       if (this.secondsLeft <= 10) return 'warn';
