@@ -325,16 +325,23 @@
 
   <!-- FOOTER -->
   <footer class="flex items-center justify-between text-xs px-2" style="color: var(--navy-soft)">
-    <span class="display-font uppercase tracking-wider text-xs">Master Diritto per l'Innovazione · LM-63 · Università di Udine</span>
     <span class="flex items-center gap-2">
       <span class="pip pip-live"></span>
       <span><span class="display-font text-base text-[var(--navy)]">16</span> dispositivi connessi</span>
     </span>
-    <span class="flex items-center gap-2">
-      <button @click="reveal()" class="btn-toon text-xs">▸ Mostra risposta</button>
-      <button @click="reset()" class="btn-toon text-xs">↻ Reset</button>
-    </span>
+    <span class="mono text-xs">https://abc1-23.ngrok-free.app</span>
   </footer>
+
+  <!-- PANNELLO DEMO — solo per testare il mockup nel browser.
+       NON sarà presente nel display reale: lì le transizioni
+       question→reveal e il reset countdown sono triggered dal
+       server (timer scade o un capitano risponde). -->
+  <div class="fixed bottom-3 right-3 z-40 flex items-center gap-2 toon p-2.5 pl-3"
+       style="background: rgba(255,255,255,0.96); border-style: dashed; opacity: 0.85;">
+    <span class="display-font text-[10px] uppercase tracking-widest" style="color:var(--navy-soft)">▾ Demo · solo mockup</span>
+    <button @click="reveal()" class="btn-toon text-xs">▸ Reveal</button>
+    <button @click="reset()" class="btn-toon text-xs">↻ Reset</button>
+  </div>
 
 </div>
 
