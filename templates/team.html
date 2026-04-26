@@ -112,8 +112,7 @@
 
   <!-- ===== FORM JOIN (no me, in lobby/setup) ===== -->
   <section x-show="!me && ['setup','lobby'].includes(state?.phase)" class="toon p-4"
-           x-data='{ f: "", l: "", t: "", mode: "pick" }'
-           x-effect="if (!teamsList().length && mode === 'pick') mode = 'new'">
+           x-data='{ f: "", l: "", t: "", userPickedNew: false }'>
     <div class="display-font text-base mb-3">Iscriviti alla sfida</div>
     <form @submit.prevent="send('team/join', { first_name: f, last_name: l, team_name: t })" class="flex flex-col gap-2.5">
       <input class="input-toon" placeholder="Nome" x-model="f" required>
@@ -122,8 +121,8 @@
       <div>
         <div class="display-font text-[11px] uppercase mb-1.5" style="color:var(--navy-soft)">Squadra</div>
 
-        <!-- modalità PICK: scegli da squadre esistenti -->
-        <div x-show="mode === 'pick' && teamsList().length" class="flex flex-col gap-1.5">
+        <!-- modalità PICK: scegli da squadre esistenti (default se ce ne sono e l'utente non ha cliccato "nuova") -->
+        <div x-show="teamsList().length && !userPickedNew" class="flex flex-col gap-1.5">
           <template x-for="team in teamsList()" :key="team.id">
             <button type="button"
                     class="px-3 py-2 toon-sm toon flex items-center justify-between transition-all"
@@ -139,13 +138,14 @@
               </span>
             </button>
           </template>
-          <button type="button" class="btn-action mt-1" @click="mode = 'new'; t = ''">+ nuova squadra</button>
+          <button type="button" class="btn-action mt-1" @click="userPickedNew = true; t = ''">+ crea nuova squadra</button>
         </div>
 
-        <!-- modalità NEW: textbox per crearne una nuova -->
-        <div x-show="mode === 'new'" class="flex flex-col gap-1.5">
+        <!-- modalità NEW: textbox (mostrato se utente ha scelto "nuova" oppure non ci sono squadre) -->
+        <div x-show="userPickedNew || !teamsList().length" class="flex flex-col gap-1.5">
           <input class="input-toon" placeholder="Nome nuova squadra" x-model="t" required>
-          <button type="button" class="text-xs underline" x-show="teamsList().length" @click="mode = 'pick'; t = ''">↩ scegli da quelle esistenti</button>
+          <button type="button" class="text-xs underline" x-show="teamsList().length"
+                  @click="userPickedNew = false; t = ''">↩ scegli da quelle esistenti</button>
         </div>
       </div>
 
