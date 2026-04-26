@@ -308,6 +308,30 @@
   <main x-show="tab === 'game'" x-cloak class="grid gap-3" style="grid-template-columns: 1fr 380px;">
     <section class="flex flex-col gap-3">
 
+      <!-- Banner FINE SFIDA (visibile in tab Partita anche dopo end) -->
+      <section x-show="state?.phase === 'finished'" class="toon p-5 toon-yellow">
+        <div class="flex items-center justify-between gap-4 mb-3">
+          <div>
+            <div class="display-font text-3xl" style="color:var(--coral); -webkit-text-stroke:0.5px var(--navy);">🏆 SFIDA TERMINATA</div>
+            <p class="text-sm mt-1" style="color:var(--navy-soft)">La classifica e visibile a tutti su /display.</p>
+          </div>
+          <button class="btn-toon coral"
+                  @click="if(confirm('Reset totale e nuova sfida?')) send('admin/reset')">↺ Nuova sfida</button>
+        </div>
+        <div class="grid gap-2">
+          <template x-for="(t, idx) in Object.values(state?.teams || {}).sort((a,b) => b.score - a.score)" :key="t.id">
+            <div class="toon-sm toon p-3 flex items-center justify-between"
+                 :style="idx === 0 ? `background:#FFF3CC; border-color:var(--yellow-deep); box-shadow: 4px 4px 0 var(--yellow-deep);` : ''">
+              <div class="flex items-baseline gap-3">
+                <span class="display-font text-2xl">#<span x-text="idx + 1"></span></span>
+                <span class="display-font text-xl" :style="`color:${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></span>
+              </div>
+              <span class="display-font text-2xl tabular-nums" x-text="t.score + ' pt'"></span>
+            </div>
+          </template>
+        </div>
+      </section>
+
       <!-- Bar stato turno + countdown + azioni -->
       <div class="toon p-4 grid items-center gap-4" style="grid-template-columns: auto 1fr auto auto;">
         <div class="relative w-20 h-20 flex-shrink-0">
@@ -351,7 +375,9 @@
         </div>
         <div class="flex flex-col gap-1.5">
           <button class="btn-action success" @click="send('admin/next_turn')" :disabled="state?.phase !== 'turn_reveal'">⏭ Next turn</button>
-          <button class="btn-action danger" @click="if(confirm('Termina sfida?')) send('admin/end_quiz')">⏹ End</button>
+          <button class="btn-action danger"
+                  :disabled="state?.phase === 'finished' || state?.phase === 'setup'"
+                  @click="if(confirm('Termina sfida?')) send('admin/end_quiz')">⏹ End</button>
         </div>
         <div class="flex flex-col gap-1.5">
           <button class="btn-action" @click="if(confirm('Reset totale?')) { send('admin/reset'); }">↺ Reset</button>
