@@ -154,6 +154,14 @@ async def _h_admin_back_to_lobby(ws: WebSocket, data: dict) -> None:
     await state.admin_back_to_lobby()
 
 
+async def _h_admin_close_election(ws: WebSocket, data: dict) -> None:
+    await state.admin_close_election()
+
+
+async def _h_admin_back_to_election(ws: WebSocket, data: dict) -> None:
+    await state.admin_back_to_election()
+
+
 async def _h_admin_start_quiz(ws: WebSocket, data: dict) -> None:
     await state.admin_start_quiz()
 
@@ -254,6 +262,8 @@ HANDLERS: dict[str, Callable[[WebSocket, dict], Awaitable[None]]] = {
     "admin/configure":             _h_admin_configure,
     "admin/open_captain_election": _h_admin_open_captain_election,
     "admin/back_to_lobby":         _h_admin_back_to_lobby,
+    "admin/close_election":        _h_admin_close_election,
+    "admin/back_to_election":      _h_admin_back_to_election,
     "admin/start_quiz":            _h_admin_start_quiz,
     "admin/next_turn":             _h_admin_next_turn,
     "admin/end_quiz":              _h_admin_end_quiz,

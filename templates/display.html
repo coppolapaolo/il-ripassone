@@ -102,6 +102,29 @@
     </div>
   </section>
 
+  <!-- ===== PHASE: pre_game (capitani annunciati) ===== -->
+  <section x-show="state?.phase === 'pre_game'" class="flex-1 flex flex-col items-center justify-center gap-6 px-8" x-cloak>
+    <div class="text-center">
+      <div class="display-font text-4xl uppercase mb-3" style="color:var(--coral); -webkit-text-stroke: 1px var(--navy);">★ Capitani eletti</div>
+      <div class="display-font text-2xl" style="color:var(--navy-soft)">
+        Pronti? L-admin avvia la sfida
+      </div>
+    </div>
+    <div class="grid gap-4 w-full max-w-5xl" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+      <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
+        <div class="toon p-5 text-center" :style="`border-color:${t.color}; box-shadow: 8px 8px 0 ${t.color};`">
+          <div class="display-font text-3xl mb-2" :style="`color:${t.color}; -webkit-text-stroke:0.6px var(--navy);`" x-text="t.name"></div>
+          <div class="display-font text-xs uppercase mb-1" style="color:var(--navy-soft)">★ Capitano</div>
+          <div class="display-font" style="font-size:36px; color:var(--coral); -webkit-text-stroke: 0.5px var(--navy);"
+               x-text="state?.players?.[t.captain_id]?.first_name + ' ' + state?.players?.[t.captain_id]?.last_name"></div>
+          <div class="text-sm mt-2" style="color:var(--navy-soft)">
+            <span x-text="teamMemberCount(t.id)"></span> membri
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
   <!-- ===== PHASE: captain_election (votazione MJ) ===== -->
   <section x-show="state?.phase === 'captain_election'" class="flex-1 flex flex-col items-center justify-center gap-6 px-8" x-cloak>
     <div class="text-center">

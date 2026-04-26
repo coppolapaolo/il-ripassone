@@ -185,8 +185,8 @@
     </div>
   </section>
 
-  <!-- ===== LOBBY/ELEZIONI: pannello modifica (collassabile) ===== -->
-  <section x-show="me && ['lobby','captain_election'].includes(state?.phase)" x-cloak
+  <!-- ===== LOBBY/ELEZIONI/PRE-GAME: pannello modifica (collassabile) ===== -->
+  <section x-show="me && ['lobby','captain_election','pre_game'].includes(state?.phase)" x-cloak
            x-data='{ open: false, ef: "", el: "", changeMode: "pick", newTeam: "" }'
            x-effect="if (open && me) { ef = ef || me.first_name; el = el || me.last_name; }">
     <button type="button" class="toon p-3 w-full flex items-center justify-between"
@@ -210,10 +210,10 @@
         </button>
       </div>
 
-      <hr style="border-color: var(--cream-deep)">
+      <hr style="border-color: var(--cream-deep)" x-show="state?.phase !== 'pre_game'">
 
-      <!-- Cambia squadra -->
-      <div>
+      <!-- Cambia squadra (NON disponibile in PRE_GAME: capitani gia eletti) -->
+      <div x-show="state?.phase !== 'pre_game'">
         <div class="display-font text-[11px] uppercase mb-1.5" style="color:var(--navy-soft)">Cambia squadra</div>
         <div x-show="changeMode === 'pick'" class="flex flex-col gap-1.5">
           <template x-for="team in teamsList().filter(t => t.id !== me.team_id)" :key="team.id">
@@ -244,9 +244,13 @@
 
       <hr style="border-color: var(--cream-deep)">
 
-      <!-- Esci -->
+      <!-- Esci (capitano in PRE_GAME non puo: server rifiuterebbe) -->
       <button type="button" class="btn-action danger"
-              @click="if(confirm('Uscire dalla sfida?')) leaveTeam()">⏏ Esci dalla sfida</button>
+              :disabled="state?.phase === 'pre_game' && isCaptainOf(me?.team_id)"
+              @click="if(confirm('Uscire dalla sfida?')) leaveTeam()">
+        <span x-show="!(state?.phase === 'pre_game' && isCaptainOf(me?.team_id))">⏏ Esci dalla sfida</span>
+        <span x-show="state?.phase === 'pre_game' && isCaptainOf(me?.team_id)" style="font-size:10px;">⏏ esci (non possibile: sei capitano eletto)</span>
+      </button>
     </div>
   </section>
 
@@ -334,6 +338,73 @@
 
     <p class="text-xs text-center mt-1" style="color:var(--navy-soft)">
       In attesa che l-admin avvii la sfida (puoi modificare i tuoi voti finché non parte).
+    </p>
+  </section>
+
+  <!-- ===== PRE_GAME: annuncio capitano + rinomina (solo capitano) ===== -->
+  <section x-show="me && state?.phase === 'pre_game'" x-cloak class="contents">
+
+    <div class="toon toon-yellow p-4 text-center">
+      <div class="display-font text-2xl leading-none mb-1" style="-webkit-text-stroke: 0.5px var(--navy);">★ CAPITANO ELETTO</div>
+      <div class="display-font" style="font-size:32px; color:var(--coral); -webkit-text-stroke: 0.6px var(--navy);"
+           x-text="state?.players?.[myTeam()?.captain_id]?.first_name + ' ' + state?.players?.[myTeam()?.captain_id]?.last_name"></div>
+      <div class="text-sm mt-2" style="color:var(--navy)">
+        <template x-if="isCaptainOf(me?.team_id)"><span><b>Sei tu!</b> Sei il capitano della squadra <b x-text="myTeam()?.name"></b>.</span></template>
+        <template x-if="!isCaptainOf(me?.team_id)"><span>e' il capitano della tua squadra <b x-text="myTeam()?.name"></b>.</span></template>
+      </div>
+    </div>
+
+    <!-- Rinomina squadra (solo capitano) -->
+    <div x-show="isCaptainOf(me?.team_id)" class="toon p-3" x-cloak
+         x-data='{ openRename: false, newName: "" }'
+         x-effect="if (openRename && myTeam()) newName = newName || myTeam().name">
+      <button type="button" class="w-full flex items-center justify-between" @click="openRename = !openRename">
+        <span class="display-font text-xs uppercase" style="color:var(--coral)">📝 Rinomina la tua squadra</span>
+        <span class="text-xs" style="color:var(--navy-soft)" x-text="openRename ? '▴' : '▾'"></span>
+      </button>
+      <div x-show="openRename" class="mt-2 flex gap-2" x-cloak>
+        <input class="input-toon flex-1" placeholder="Nuovo nome" x-model="newName">
+        <button type="button" class="btn-action warn"
+                :disabled="!newName || newName.toUpperCase() === myTeam()?.name"
+                @click="send('team/rename_team', { player_id: me.id, new_name: newName }); openRename = false">salva</button>
+      </div>
+      <p class="text-[11px] mt-2" style="color:var(--navy-soft)">
+        Solo tu (capitano) puoi cambiare il nome della squadra ora.
+      </p>
+    </div>
+
+    <!-- Lista membri della squadra -->
+    <div class="toon p-3">
+      <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">La tua squadra</div>
+      <div class="flex flex-col gap-1">
+        <template x-for="m in teamMembers(me?.team_id)" :key="m.id">
+          <div class="flex items-center justify-between text-sm">
+            <span x-text="m.first_name + ' ' + m.last_name"></span>
+            <template x-if="m.id === myTeam()?.captain_id">
+              <span class="display-font text-[10px] px-2 py-0.5 toon-sm toon" style="background:var(--coral); color:#fff; box-shadow:2px 2px 0 var(--navy);">★ CAPITANO</span>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Tutte le squadre della sfida -->
+    <div class="toon p-3">
+      <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">Le altre squadre</div>
+      <div class="flex flex-col gap-1.5">
+        <template x-for="t in teamsList().filter(x => x.id !== me.team_id)" :key="t.id">
+          <div class="flex items-center justify-between text-sm">
+            <span class="display-font" :style="`color:${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></span>
+            <span class="text-xs" style="color:var(--navy-soft)">
+              cap. <b style="color:var(--navy)" x-text="state?.players?.[t.captain_id]?.first_name"></b>
+            </span>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <p class="text-xs text-center mt-1" style="color:var(--navy-soft)">
+      In attesa che l-admin avvii la sfida…
     </p>
   </section>
 

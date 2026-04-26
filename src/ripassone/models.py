@@ -18,6 +18,7 @@ class Phase(str, Enum):
     SETUP = "setup"                 # admin sta configurando
     LOBBY = "lobby"                 # studenti si connettono e formano squadre
     CAPTAIN_ELECTION = "captain_election"  # voto MJ per scegliere il capitano
+    PRE_GAME = "pre_game"           # capitani annunciati, attesa avvio sfida
     READY_TO_START = "ready_to_start"  # ordine sorteggiato, in attesa start
     TURN_CHOICE = "turn_choice"     # capitano di turno sceglie domanda
     TURN_QUESTION = "turn_question" # countdown attivo, in attesa risposta

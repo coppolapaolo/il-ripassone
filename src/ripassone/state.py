@@ -38,7 +38,8 @@ _lock = asyncio.Lock()
 VALID_TRANSITIONS: dict[Phase, set[Phase]] = {
     Phase.SETUP:             {Phase.LOBBY},
     Phase.LOBBY:             {Phase.SETUP, Phase.CAPTAIN_ELECTION},
-    Phase.CAPTAIN_ELECTION:  {Phase.LOBBY, Phase.READY_TO_START},
+    Phase.CAPTAIN_ELECTION:  {Phase.LOBBY, Phase.PRE_GAME},
+    Phase.PRE_GAME:          {Phase.CAPTAIN_ELECTION, Phase.READY_TO_START},
     Phase.READY_TO_START:    {Phase.LOBBY, Phase.TURN_CHOICE},
     Phase.TURN_CHOICE:       {Phase.TURN_QUESTION, Phase.FINISHED},
     Phase.TURN_QUESTION:     {Phase.TURN_REVEAL},
@@ -266,24 +267,15 @@ async def admin_back_to_lobby() -> None:
         transition(Phase.LOBBY)
 
 
-async def admin_start_quiz() -> None:
-    """CAPTAIN_ELECTION -> READY -> TURN_CHOICE.
+async def admin_close_election() -> None:
+    """CAPTAIN_ELECTION -> PRE_GAME: finalizza i capitani via Majority Judgment.
 
-    Calcola i capitani definitivi (Majority Judgment) e sorteggia l'ordine.
-    Per le squadre senza voti, mantiene il capitano provvisorio (primo entrato)
-    o il primo membro disponibile.
+    Per ogni squadra: se ci sono voti, vince il MJ; altrimenti rimane il
+    capitano corrente (primo entrato). Pulisce i dati di voto (non servono piu).
     """
     async with _lock:
         if _phase() != Phase.CAPTAIN_ELECTION:
-            raise StateError(
-                "Per avviare la sfida bisogna prima aprire le elezioni capitano"
-            )
-        if len(STATE.teams) < 2:
-            raise StateError("Servono almeno 2 squadre per iniziare")
-        if not STATE.questions_pool:
-            raise StateError("Il pool domande e vuoto: carica almeno una domanda")
-
-        # finalizza capitani: MJ se ci sono voti, altrimenti capitano corrente
+            raise StateError("Si chiudono le elezioni solo dalla fase elezioni")
         for t in STATE.teams.values():
             mj_winner = compute_captain_mj(t.id)
             if mj_winner is not None:
@@ -293,10 +285,39 @@ async def admin_start_quiz() -> None:
                 if not members:
                     raise StateError(f"La squadra {t.name} e vuota")
                 t.captain_id = members[0].id
-
-        # pulisci dati di voto (non servono piu)
         STATE.captain_votes = {}
         STATE.provisional_captains = {}
+        transition(Phase.PRE_GAME)
+
+
+async def admin_back_to_election() -> None:
+    """PRE_GAME -> CAPTAIN_ELECTION: riapre le elezioni (es. squadra che
+    perde il capitano o vuole ri-eleggere). Inizializza nuove urne vuote."""
+    async with _lock:
+        if _phase() != Phase.PRE_GAME:
+            raise StateError("Si torna alle elezioni solo dal pre-game")
+        STATE.captain_votes = {t.id: {} for t in STATE.teams.values()}
+        STATE.provisional_captains = {}
+        transition(Phase.CAPTAIN_ELECTION)
+
+
+async def admin_start_quiz() -> None:
+    """PRE_GAME -> READY -> TURN_CHOICE: sorteggia ordine, apre primo turno.
+
+    I capitani sono gia stati finalizzati in admin_close_election.
+    """
+    async with _lock:
+        if _phase() != Phase.PRE_GAME:
+            raise StateError(
+                "Per avviare la sfida bisogna passare per le elezioni e il pre-game"
+            )
+        if len(STATE.teams) < 2:
+            raise StateError("Servono almeno 2 squadre per iniziare")
+        if not STATE.questions_pool:
+            raise StateError("Il pool domande e vuoto: carica almeno una domanda")
+        for t in STATE.teams.values():
+            if t.captain_id is None:
+                raise StateError(f"La squadra {t.name} non ha un capitano")
 
         order = list(STATE.teams.keys())
         random.shuffle(order)
@@ -445,13 +466,26 @@ async def team_join(first_name: str, last_name: str, team_name: str) -> tuple[Pl
 
 async def team_leave(player_id: str) -> None:
     """Rimuove il giocatore. Auto-elimina la squadra se rimane vuota,
-    riassegna il capitano se necessario."""
+    riassegna il capitano se necessario.
+
+    In PRE_GAME un capitano non puo uscire (destabilizza la sfida appena
+    formata): l'admin deve prima riaprire le elezioni.
+    """
     async with _lock:
-        if _phase() not in (Phase.SETUP, Phase.LOBBY, Phase.CAPTAIN_ELECTION):
+        if _phase() not in (Phase.SETUP, Phase.LOBBY, Phase.CAPTAIN_ELECTION, Phase.PRE_GAME):
             raise StateError("I giocatori possono uscire solo prima della sfida")
-        player = STATE.players.pop(player_id, None)
+        player = STATE.players.get(player_id)
         if player is None or not player.team_id:
+            STATE.players.pop(player_id, None)
             return
+        if _phase() == Phase.PRE_GAME:
+            team = STATE.teams.get(player.team_id)
+            if team and team.captain_id == player.id:
+                raise StateError(
+                    "Il capitano non puo uscire dopo l'elezione: "
+                    "chiedi all'admin di riaprire le elezioni"
+                )
+        STATE.players.pop(player_id, None)
         team_id = player.team_id
         _cleanup_team_after_member_loss(team_id, player.id)
         if _phase() == Phase.CAPTAIN_ELECTION:
@@ -509,7 +543,7 @@ async def team_change_team(player_id: str, target_team_name: str) -> None:
 async def team_edit_self(player_id: str, first_name: str, last_name: str) -> None:
     """Modifica nome/cognome del giocatore (correzione typo)."""
     async with _lock:
-        if _phase() not in (Phase.SETUP, Phase.LOBBY, Phase.CAPTAIN_ELECTION):
+        if _phase() not in (Phase.SETUP, Phase.LOBBY, Phase.CAPTAIN_ELECTION, Phase.PRE_GAME):
             raise StateError("Modifica anagrafica solo prima della sfida")
         player = STATE.players.get(player_id)
         if player is None:
@@ -548,22 +582,29 @@ async def team_vote_captain(voter_id: str, candidate_id: str, grade: int) -> Non
 
 
 async def team_rename_team(player_id: str, new_name: str) -> None:
-    """Rinomina la squadra del giocatore (qualsiasi membro puo' farlo).
-    Permesso in LOBBY e CAPTAIN_ELECTION. Validazione: nome non vuoto e unico."""
+    """Rinomina la squadra del giocatore.
+
+    - In LOBBY o CAPTAIN_ELECTION: qualsiasi membro puo rinominare.
+    - In PRE_GAME: solo il capitano (eletto) puo rinominare.
+
+    Validazione: nome non vuoto e unico (case-insensitive).
+    """
     async with _lock:
-        if _phase() not in (Phase.LOBBY, Phase.CAPTAIN_ELECTION):
-            raise StateError("Rinomina squadra solo in LOBBY o durante le elezioni")
+        if _phase() not in (Phase.LOBBY, Phase.CAPTAIN_ELECTION, Phase.PRE_GAME):
+            raise StateError("Rinomina squadra solo prima della sfida")
         player = STATE.players.get(player_id)
         if player is None or not player.team_id:
             raise StateError("Giocatore o squadra non trovati")
         team = STATE.teams.get(player.team_id)
         if team is None:
             raise StateError("Squadra non trovata")
+        if _phase() == Phase.PRE_GAME and team.captain_id != player.id:
+            raise StateError("Solo il capitano eletto puo rinominare la squadra")
         new_name = new_name.strip()
         if not new_name:
             raise StateError("Nome squadra obbligatorio")
         if new_name.upper() == team.name.upper():
-            return  # stesso nome, no-op
+            return
         existing = _team_by_name(new_name)
         if existing is not None and existing.id != team.id:
             raise StateError(f"Esiste gia una squadra chiamata {existing.name}")

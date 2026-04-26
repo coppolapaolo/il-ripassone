@@ -48,9 +48,11 @@ Stampa in console:
 3. Studenti aprono `/team` da QR e si iscrivono (squadra esistente come opzione cliccabile, oppure crea nuova). Min 2 membri/squadra.
 4. Admin tab **Lobby**: clicca *Apri elezioni capitano*
 5. **Elezioni**: ogni studente vota i membri della propria squadra su 5 livelli (Eccellente/Buono/Accettabile/Scarso/Inadeguato). Il capitano provvisorio (Majority Judgment) è ricalcolato in tempo reale e visibile in admin/team. Si può rinominare la squadra, correggere nome/cognome, cambiare squadra.
-6. Admin clicca *Avvia sfida* (calcola capitani definitivi con MJ, sorteggia ordine)
-7. Loop: capitano sceglie domanda+puntata+target → countdown → risposta → reveal → *Next turn*
-8. A fine round: classifica finale su `/display`
+6. Admin clicca *Chiudi elezioni e annuncia capitani* → fase **PRE_GAME**
+7. **PRE_GAME**: capitani annunciati su tutti i client. Solo il capitano può rinominare la sua squadra. Il cambio squadra è bloccato. Edit nome/cognome ancora possibile. L'admin può tornare alle elezioni se serve.
+8. Admin clicca *Avvia sfida* (sorteggia ordine, apre primo turno)
+9. Loop: capitano sceglie domanda+puntata+target → countdown → risposta → reveal → *Next turn*
+10. A fine round: classifica finale su `/display` e tab Partita di admin
 
 ### Test con dati precompilati
 
@@ -69,7 +71,7 @@ di domande:
 ## Architettura
 
 - **Backend**: FastAPI + uvicorn + WebSocket (Python 3.14)
-- **Stato**: Pydantic + state machine 8 fasi (`setup → lobby → captain_election → ready → turn_choice → turn_question → turn_reveal → finished`)
+- **Stato**: Pydantic + state machine 9 fasi (`setup → lobby → captain_election → pre_game → ready → turn_choice → turn_question → turn_reveal → finished`)
 - **Elezione capitano**: Majority Judgment (Balinski-Laraki 2010) su scala 5 livelli. Tiebreak deterministico via lower-median sequence.
 - **Persistenza**: in-RAM (1 partita = 1 sessione server)
 - **Frontend**: Tailwind CSS via CDN + Alpine.js + Web Audio API

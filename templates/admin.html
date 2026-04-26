@@ -211,7 +211,8 @@
     <section class="toon p-4 flex flex-wrap items-center gap-3">
       <span class="display-font text-sm uppercase" style="color:var(--navy-soft)">
         <template x-if="state?.phase === 'captain_election'"><span>Elezioni capitano</span></template>
-        <template x-if="state?.phase !== 'captain_election'"><span>Lobby</span></template>
+        <template x-if="state?.phase === 'pre_game'"><span>Pre-game</span></template>
+        <template x-if="!['captain_election','pre_game'].includes(state?.phase)"><span>Lobby</span></template>
       </span>
       <span class="text-sm">
         <span class="display-font text-lg" x-text="Object.keys(state?.teams || {}).length"></span> squadre,
@@ -223,10 +224,16 @@
       <button class="btn-toon teal" x-show="state?.phase === 'lobby'"
               @click="send('admin/open_captain_election')">⚖ Apri elezioni capitano</button>
 
-      <!-- CAPTAIN_ELECTION: torna in lobby + avvia sfida -->
+      <!-- CAPTAIN_ELECTION: torna in lobby + chiudi elezioni -->
       <button class="btn-action" x-show="state?.phase === 'captain_election'"
               @click="if(confirm('Tornare in lobby e annullare i voti raccolti?')) send('admin/back_to_lobby')">↩ Torna in lobby</button>
-      <button class="btn-toon coral" x-show="state?.phase === 'captain_election'"
+      <button class="btn-toon teal" x-show="state?.phase === 'captain_election'"
+              @click="send('admin/close_election')">✓ Chiudi elezioni e annuncia capitani</button>
+
+      <!-- PRE_GAME: torna alle elezioni + avvia sfida -->
+      <button class="btn-action" x-show="state?.phase === 'pre_game'"
+              @click="if(confirm('Riaprire le elezioni? I capitani correnti verranno azzerati.')) send('admin/back_to_election')">↩ Torna alle elezioni</button>
+      <button class="btn-toon coral" x-show="state?.phase === 'pre_game'"
               @click="send('admin/start_quiz')">▶ Avvia sfida</button>
     </section>
 
@@ -255,6 +262,30 @@
         </template>
         <template x-if="!Object.keys(state?.teams || {}).length">
           <div class="text-sm py-3" style="color:var(--navy-soft)">Nessuna squadra ancora. Apri <code class="mono">/team</code> sui telefoni degli studenti.</div>
+        </template>
+      </div>
+
+      <!-- PRE_GAME: capitani annunciati, lista con squadre e capitano in evidenza -->
+      <div x-show="state?.phase === 'pre_game'" class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+        <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
+          <div class="toon-sm toon p-4" :style="`border-color:${t.color}; box-shadow: 4px 4px 0 ${t.color};`">
+            <div class="flex items-baseline justify-between mb-2">
+              <span class="display-font text-lg" :style="`color:${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></span>
+              <span class="text-xs" style="color:var(--navy-soft)">
+                <span x-text="teamMemberCount(t.id)"></span> membri
+              </span>
+            </div>
+            <div class="display-font text-xs uppercase mb-1" style="color:var(--navy-soft)">★ Capitano eletto</div>
+            <div class="display-font text-xl mb-2" style="color:var(--coral); -webkit-text-stroke: 0.4px var(--navy);"
+                 x-text="state?.players?.[t.captain_id]?.first_name + ' ' + state?.players?.[t.captain_id]?.last_name"></div>
+            <div class="text-[11px] flex flex-wrap gap-1">
+              <template x-for="p in teamMembers(t.id).filter(p => p.id !== t.captain_id)" :key="p.id">
+                <span class="px-1.5 py-0.5 rounded toon-sm toon" style="background:#fff; box-shadow: 2px 2px 0 var(--navy); border-width: 1.5px;">
+                  <span x-text="p.first_name + ' ' + p.last_name"></span>
+                </span>
+              </template>
+            </div>
+          </div>
         </template>
       </div>
 

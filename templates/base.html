@@ -130,7 +130,7 @@ function ripassoneClient(role) {
             this.settings = JSON.parse(JSON.stringify(msg.data.settings));
             // se il quiz e gia in corso, vai automaticamente alla tab Partita
             if (msg.data.phase && msg.data.phase.startsWith('turn_')) this.tab = 'game';
-            else if (['lobby','captain_election'].includes(msg.data.phase)) this.tab = 'lobby';
+            else if (['lobby','captain_election','pre_game'].includes(msg.data.phase)) this.tab = 'lobby';
           }
           this.state = msg.data;
           this.countdown = msg.data.countdown_seconds_left;
