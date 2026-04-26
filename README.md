@@ -44,11 +44,23 @@ Stampa in console:
 ### 3. Flusso tipico
 
 1. Admin tab **Setup**: imposta round/tempo/punti/puntate, clicca *Applica e vai in Lobby*
-2. Admin tab **Setup**: carica i `.xlsx` con le domande proposte dagli studenti (oppure *Seed 6 demo* per test)
+2. Admin tab **Setup**: carica i `.xlsx` con le domande proposte dagli studenti
 3. Studenti aprono `/team` da QR e si iscrivono (1° → capitano)
 4. Admin tab **Lobby**: vede squadre + clicca *Start quiz* (sorteggia ordine)
 5. Loop: capitano sceglie domanda+puntata+target → countdown → risposta → reveal → *Next turn*
 6. A fine round: classifica finale su `/display`
+
+### Test con dati precompilati
+
+Per provare il sistema senza file degli studenti, sono disponibili due fonti
+di domande:
+
+- **`prova_domande_1.xlsx`** (in cartella): 142 domande reali estratte dal pool
+  ufficiale del corso (firme/eIDAS, CAD, codifica, AI/ML…). Distribuzione:
+  L01:11 · L02:13 · L04:35 · L05:54 · L06:11 · L11:18; difficoltà 65/63/14.
+  Caricare via tab Setup → *Carica file*.
+- **Seed demo**: bottone *Seed 6 demo* nel pannello upload — 6 domande hardcoded
+  per test rapidissimi senza file.
 
 ---
 
