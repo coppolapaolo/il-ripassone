@@ -94,7 +94,7 @@
     <section class="flex flex-col gap-4">
       <!-- Parametri -->
       <div class="toon p-5">
-        <h2 class="display-font text-xl mb-3">⚙ Parametri quiz</h2>
+        <h2 class="display-font text-xl mb-3">⚙ Parametri sfida</h2>
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1">
             <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Numero round</span>
@@ -213,7 +213,7 @@
         <span class="display-font text-lg" x-text="Object.keys(state?.players || {}).length"></span> giocatori
       </span>
       <span class="ml-auto"></span>
-      <button class="btn-toon coral" @click="send('admin/start_quiz')" :disabled="state?.phase !== 'lobby'">▶ Start quiz</button>
+      <button class="btn-toon coral" @click="send('admin/start_quiz')" :disabled="state?.phase !== 'lobby'">▶ Avvia sfida</button>
     </section>
 
     <section class="toon p-4">
@@ -292,7 +292,7 @@
         </div>
         <div class="flex flex-col gap-1.5">
           <button class="btn-action success" @click="send('admin/next_turn')" :disabled="state?.phase !== 'turn_reveal'">⏭ Next turn</button>
-          <button class="btn-action danger" @click="if(confirm('Termina quiz?')) send('admin/end_quiz')">⏹ End</button>
+          <button class="btn-action danger" @click="if(confirm('Termina sfida?')) send('admin/end_quiz')">⏹ End</button>
         </div>
         <div class="flex flex-col gap-1.5">
           <button class="btn-action" @click="if(confirm('Reset totale?')) { send('admin/reset'); }">↺ Reset</button>
@@ -335,7 +335,7 @@
             </div>
           </template>
           <template x-if="!Object.keys(state?.teams || {}).length">
-            <div class="text-sm" style="color:var(--navy-soft)">Nessuna squadra in partita.</div>
+            <div class="text-sm" style="color:var(--navy-soft)">Nessuna squadra nella sfida.</div>
           </template>
         </div>
       </div>

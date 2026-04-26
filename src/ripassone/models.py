@@ -21,18 +21,18 @@ class Phase(str, Enum):
     TURN_CHOICE = "turn_choice"     # capitano di turno sceglie domanda
     TURN_QUESTION = "turn_question" # countdown attivo, in attesa risposta
     TURN_REVEAL = "turn_reveal"     # risposta rivelata, scoring fatto
-    FINISHED = "finished"           # quiz concluso, classifica finale
+    FINISHED = "finished"           # sfida conclusa, classifica finale
 
 
 class Settings(BaseModel):
-    """Parametri del quiz definiti dall'admin in fase SETUP."""
-    rounds: int = 12
-    seconds: int = 30
+    """Parametri della sfida definiti dall'admin in fase SETUP."""
+    rounds: int = 2
+    seconds: int = 90
     initial_points: int = 100
     min_bet: int = 5
     max_bet: int = 50
     # moltiplicatori del countdown per livello di difficolta (1 facile, 2 media, 3 tosta)
-    time_factors: dict[int, float] = Field(default_factory=lambda: {1: 0.7, 2: 1.0, 3: 1.4})
+    time_factors: dict[int, float] = Field(default_factory=lambda: {1: 0.5, 2: 1.0, 3: 1.4})
 
     def seconds_for_difficulty(self, difficulty: int) -> int:
         """Ritorna il countdown in secondi (intero) per la difficolta data."""

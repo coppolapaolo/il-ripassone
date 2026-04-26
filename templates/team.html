@@ -112,7 +112,7 @@
 
   <!-- ===== FORM JOIN (no me, in lobby/setup) ===== -->
   <section x-show="!me && ['setup','lobby'].includes(state?.phase)" class="toon p-4" x-data="{ f:'', l:'', t:'' }">
-    <div class="display-font text-base mb-3">Iscriviti al quiz</div>
+    <div class="display-font text-base mb-3">Iscriviti alla sfida</div>
     <form @submit.prevent="send('team/join', { first_name: f, last_name: l, team_name: t })" class="flex flex-col gap-2">
       <input class="input-toon" placeholder="Nome" x-model="f" required>
       <input class="input-toon" placeholder="Cognome" x-model="l" required>
@@ -125,7 +125,7 @@
   <!-- ===== Iscrizione chiusa ===== -->
   <section x-show="!me && !['setup','lobby'].includes(state?.phase)" class="toon p-4" x-cloak>
     <div class="display-font text-lg" style="color:var(--coral)">⛔ Iscrizione chiusa</div>
-    <p class="text-sm mt-1" style="color:var(--navy-soft)">Il quiz e gia in corso (fase: <span x-text="state?.phase"></span>). Chiedi all-admin di reset se serve riaprire.</p>
+    <p class="text-sm mt-1" style="color:var(--navy-soft)">La sfida e gia in corso (fase: <span x-text="state?.phase"></span>). Chiedi all-admin di reset se serve riaprire.</p>
   </section>
 
   <!-- ===== HEADER squadra (me presente) ===== -->
@@ -165,7 +165,7 @@
         </div>
       </template>
     </div>
-    <p class="text-xs mt-3" style="color:var(--navy-soft)">In attesa che l-admin avvii il quiz…</p>
+    <p class="text-xs mt-3" style="color:var(--navy-soft)">In attesa che l-admin avvii la sfida…</p>
   </section>
 
   <!-- ===== TURN_CHOICE: capitano della squadra di turno ===== -->
@@ -435,7 +435,7 @@
 
   <!-- footer debug minimale -->
   <div class="text-xs flex items-center justify-between px-1 mt-2" style="color:var(--navy-soft)" x-show="me" x-cloak>
-    <button class="underline" @click="forgetMe()">esci dal quiz</button>
+    <button class="underline" @click="forgetMe()">esci dalla sfida</button>
     <span><span class="pip pip-live"></span> live</span>
   </div>
 

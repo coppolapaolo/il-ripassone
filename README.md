@@ -1,6 +1,6 @@
 # Il Ripassone
 
-Quiz interattivo a squadre per il corso DIPA, Master Diritto per
+Sfida interattiva a squadre per il corso DIPA, Master Diritto per
 l'Innovazione, Università di Udine.
 
 Le squadre di studenti si sfidano a colpi di domande a risposta multipla
@@ -46,7 +46,7 @@ Stampa in console:
 1. Admin tab **Setup**: imposta round/tempo/punti/puntate, clicca *Applica e vai in Lobby*
 2. Admin tab **Setup**: carica i `.xlsx` con le domande proposte dagli studenti
 3. Studenti aprono `/team` da QR e si iscrivono (1° → capitano)
-4. Admin tab **Lobby**: vede squadre + clicca *Start quiz* (sorteggia ordine)
+4. Admin tab **Lobby**: vede squadre + clicca *Avvia sfida* (sorteggia ordine)
 5. Loop: capitano sceglie domanda+puntata+target → countdown → risposta → reveal → *Next turn*
 6. A fine round: classifica finale su `/display`
 

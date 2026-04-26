@@ -104,7 +104,7 @@ def print_banner(public_url: str | None) -> None:
 # Entry point
 # ============================================================
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Il Ripassone — quiz interattivo")
+    parser = argparse.ArgumentParser(description="Il Ripassone — sfida interattiva a squadre")
     parser.add_argument(
         "--public", action="store_true",
         help="Espone il server via ngrok (URL pubblico raggiungibile da telefoni e altre reti)",

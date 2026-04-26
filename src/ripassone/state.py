@@ -116,7 +116,7 @@ def _team_of_captain(captain_id: str) -> Team | None:
 # Handlers — eventi admin
 # ============================================================
 async def admin_configure(settings: Settings) -> None:
-    """Imposta i parametri del quiz e passa in LOBBY."""
+    """Imposta i parametri della sfida e passa in LOBBY."""
     async with _lock:
         if _phase() not in (Phase.SETUP, Phase.LOBBY):
             raise StateError(
@@ -135,7 +135,7 @@ async def admin_start_quiz() -> None:
     """LOBBY -> READY -> TURN_CHOICE: sorteggia ordine, apre primo turno."""
     async with _lock:
         if _phase() != Phase.LOBBY:
-            raise StateError("Lo start si puo fare solo dalla LOBBY")
+            raise StateError("L'avvio della sfida si puo fare solo dalla LOBBY")
         if len(STATE.teams) < 2:
             raise StateError("Servono almeno 2 squadre per iniziare")
         for t in STATE.teams.values():
@@ -170,7 +170,7 @@ async def admin_next_turn() -> None:
 
 
 async def admin_end_quiz() -> None:
-    """Termine forzato del quiz: ovunque ci si trovi, vai a FINISHED."""
+    """Termine forzato della sfida: ovunque ci si trovi, vai a FINISHED."""
     async with _lock:
         if _phase() == Phase.SETUP or _phase() == Phase.FINISHED:
             return  # gia finito o non iniziato
@@ -332,7 +332,7 @@ async def captain_choose_question(captain_id: str, question_id: int, bet: int, t
             raise StateError("Solo il capitano della squadra di turno puo scegliere")
 
         if question_id in STATE.used_question_ids:
-            raise StateError("Domanda gia usata in questo quiz")
+            raise StateError("Domanda gia usata in questa sfida")
         question = STATE.questions_pool.get(question_id)
         if question is None:
             raise StateError(f"Domanda {question_id} non presente nel pool")
