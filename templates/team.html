@@ -111,14 +111,48 @@
   </header>
 
   <!-- ===== FORM JOIN (no me, in lobby/setup) ===== -->
-  <section x-show="!me && ['setup','lobby'].includes(state?.phase)" class="toon p-4" x-data="{ f:'', l:'', t:'' }">
+  <section x-show="!me && ['setup','lobby'].includes(state?.phase)" class="toon p-4"
+           x-data='{ f: "", l: "", t: "", mode: "pick" }'
+           x-effect="if (!teamsList().length && mode === 'pick') mode = 'new'">
     <div class="display-font text-base mb-3">Iscriviti alla sfida</div>
-    <form @submit.prevent="send('team/join', { first_name: f, last_name: l, team_name: t })" class="flex flex-col gap-2">
+    <form @submit.prevent="send('team/join', { first_name: f, last_name: l, team_name: t })" class="flex flex-col gap-2.5">
       <input class="input-toon" placeholder="Nome" x-model="f" required>
       <input class="input-toon" placeholder="Cognome" x-model="l" required>
-      <input class="input-toon" placeholder="Nome squadra" x-model="t" required>
-      <button class="btn-toon coral mt-1" type="submit">Entra</button>
-      <p class="text-[11px] mt-1" style="color:var(--navy-soft)">Se la squadra esiste gia, ti aggiungerai come membro. Se la crei tu, sei il capitano.</p>
+
+      <div>
+        <div class="display-font text-[11px] uppercase mb-1.5" style="color:var(--navy-soft)">Squadra</div>
+
+        <!-- modalità PICK: scegli da squadre esistenti -->
+        <div x-show="mode === 'pick' && teamsList().length" class="flex flex-col gap-1.5">
+          <template x-for="team in teamsList()" :key="team.id">
+            <button type="button"
+                    class="px-3 py-2 toon-sm toon flex items-center justify-between transition-all"
+                    :style="t === team.name
+                      ? `background:${team.color}; color:#fff;`
+                      : `background:#fff; border-color:${team.color}; box-shadow: 3px 3px 0 ${team.color};`"
+                    @click="t = team.name">
+              <span class="display-font text-base"
+                    :style="t === team.name ? '' : `color:${team.color}; -webkit-text-stroke:0.4px var(--navy);`"
+                    x-text="team.name"></span>
+              <span class="text-xs" :style="t === team.name ? 'color:#fff;' : 'color:var(--navy-soft)'">
+                <span x-text="teamMemberCount(team.id)"></span> membri
+              </span>
+            </button>
+          </template>
+          <button type="button" class="btn-action mt-1" @click="mode = 'new'; t = ''">+ nuova squadra</button>
+        </div>
+
+        <!-- modalità NEW: textbox per crearne una nuova -->
+        <div x-show="mode === 'new'" class="flex flex-col gap-1.5">
+          <input class="input-toon" placeholder="Nome nuova squadra" x-model="t" required>
+          <button type="button" class="text-xs underline" x-show="teamsList().length" @click="mode = 'pick'; t = ''">↩ scegli da quelle esistenti</button>
+        </div>
+      </div>
+
+      <button class="btn-toon coral mt-1" type="submit" :disabled="!f || !l || !t">Entra</button>
+      <p class="text-[11px] mt-1" style="color:var(--navy-soft)">
+        Tip: scegli sempre da quelle esistenti se la tua squadra c-e gia (riduce typo).
+      </p>
     </form>
   </section>
 
@@ -148,6 +182,71 @@
     <div class="text-right pl-2">
       <div class="display-font text-[10px] uppercase leading-none" style="color:var(--navy-soft)">Punti</div>
       <div class="display-font text-2xl leading-none mt-0.5" x-text="myTeam()?.score"></div>
+    </div>
+  </section>
+
+  <!-- ===== LOBBY: pannello modifica (collassabile) ===== -->
+  <section x-show="me && state?.phase === 'lobby'" x-cloak
+           x-data='{ open: false, ef: "", el: "", changeMode: "pick", newTeam: "" }'
+           x-effect="if (open && me) { ef = ef || me.first_name; el = el || me.last_name; }">
+    <button type="button" class="toon p-3 w-full flex items-center justify-between"
+            @click="open = !open">
+      <span class="display-font text-sm uppercase" style="color:var(--navy-soft)">⚙ Correggi i tuoi dati</span>
+      <span class="text-xs" style="color:var(--navy-soft)" x-text="open ? '▴ chiudi' : '▾ apri'"></span>
+    </button>
+    <div x-show="open" class="toon mt-1 p-3 flex flex-col gap-3" x-cloak>
+
+      <!-- Edit nome/cognome -->
+      <div>
+        <div class="display-font text-[11px] uppercase mb-1.5" style="color:var(--navy-soft)">Nome e cognome</div>
+        <div class="flex gap-2">
+          <input class="input-toon flex-1" placeholder="Nome" x-model="ef">
+          <input class="input-toon flex-1" placeholder="Cognome" x-model="el">
+        </div>
+        <button type="button" class="btn-action warn mt-1.5"
+                :disabled="!ef || !el || (ef === me.first_name && el === me.last_name)"
+                @click="send('team/edit_self', { player_id: me.id, first_name: ef, last_name: el })">
+          ✎ salva nome/cognome
+        </button>
+      </div>
+
+      <hr style="border-color: var(--cream-deep)">
+
+      <!-- Cambia squadra -->
+      <div>
+        <div class="display-font text-[11px] uppercase mb-1.5" style="color:var(--navy-soft)">Cambia squadra</div>
+        <div x-show="changeMode === 'pick'" class="flex flex-col gap-1.5">
+          <template x-for="team in teamsList().filter(t => t.id !== me.team_id)" :key="team.id">
+            <button type="button" class="px-3 py-2 toon-sm toon flex items-center justify-between"
+                    :style="`background:#fff; border-color:${team.color}; box-shadow: 2px 2px 0 ${team.color};`"
+                    @click="if(confirm('Spostarsi in ' + team.name + '?')) send('team/change_team', { player_id: me.id, team_name: team.name })">
+              <span class="display-font text-sm"
+                    :style="`color:${team.color}; -webkit-text-stroke:0.3px var(--navy);`"
+                    x-text="team.name"></span>
+              <span class="text-xs" style="color:var(--navy-soft)">
+                <span x-text="teamMemberCount(team.id)"></span> membri
+              </span>
+            </button>
+          </template>
+          <template x-if="!teamsList().filter(t => t.id !== me.team_id).length">
+            <div class="text-xs" style="color:var(--navy-soft)">Nessun-altra squadra disponibile.</div>
+          </template>
+          <button type="button" class="btn-action mt-1" @click="changeMode = 'new'">+ crea nuova squadra</button>
+        </div>
+        <div x-show="changeMode === 'new'" class="flex gap-2">
+          <input class="input-toon flex-1" placeholder="Nuova squadra" x-model="newTeam">
+          <button type="button" class="btn-action warn"
+                  :disabled="!newTeam"
+                  @click="send('team/change_team', { player_id: me.id, team_name: newTeam }); newTeam=''; changeMode='pick'">crea</button>
+          <button type="button" class="text-xs underline" @click="changeMode = 'pick'; newTeam = ''">↩</button>
+        </div>
+      </div>
+
+      <hr style="border-color: var(--cream-deep)">
+
+      <!-- Esci -->
+      <button type="button" class="btn-action danger"
+              @click="if(confirm('Uscire dalla sfida?')) leaveTeam()">⏏ Esci dalla sfida</button>
     </div>
   </section>
 
@@ -435,7 +534,7 @@
 
   <!-- footer debug minimale -->
   <div class="text-xs flex items-center justify-between px-1 mt-2" style="color:var(--navy-soft)" x-show="me" x-cloak>
-    <button class="underline" @click="forgetMe()">esci dalla sfida</button>
+    <button class="underline" @click="if(confirm('Uscire dalla sfida?')) leaveTeam()">esci dalla sfida</button>
     <span><span class="pip pip-live"></span> live</span>
   </div>
 

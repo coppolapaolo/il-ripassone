@@ -18,6 +18,14 @@
 
 {% block body %}{% endblock %}
 
+<!-- Banner kicked (sessione sostituita) -->
+<div x-show="kickedMessage" x-cloak
+     class="fixed top-3 left-1/2 -translate-x-1/2 z-50 toon p-3 toon-coral max-w-md text-center"
+     style="background: var(--coral); color: #fff;">
+  <div class="display-font text-base">⚠ Sessione sostituita</div>
+  <div class="text-sm mt-1" x-text="kickedMessage"></div>
+</div>
+
 <!-- Status WS sempre visibile in basso a destra (debug bar minimale) -->
 <div class="fixed bottom-3 right-3 z-50 toon-sm toon px-3 py-1.5 flex items-center gap-2"
      style="background: rgba(255,255,255,0.96); font-size: 11px;">
@@ -82,6 +90,7 @@ function ripassoneClient(role) {
     role,
     ws: null, connected: false,
     state: null, lastError: null,
+    kickedMessage: null,
     countdown: null,
     audioReady: false, muted: false,
     prevPhase: null,
@@ -138,6 +147,10 @@ function ripassoneClient(role) {
         } else if (msg.type === 'team/joined') {
           this.me = msg.data;
           localStorage.setItem('ripassone.me', JSON.stringify(this.me));
+        } else if (msg.type === 'team/kicked') {
+          this.kickedMessage = msg.msg || 'Sessione sostituita.';
+          this.forgetMe();
+          setTimeout(() => this.kickedMessage = null, 8000);
         }
       };
     },
@@ -147,6 +160,10 @@ function ripassoneClient(role) {
     },
     enableAudio() { RipassoneAudio.enable(); this.audioReady = true; },
     forgetMe()    { this.me = null; localStorage.removeItem('ripassone.me'); },
+    leaveTeam()   {
+      if (this.me) this.send('team/leave', { player_id: this.me.id });
+      this.forgetMe();
+    },
 
     /* hook: reazioni audio ai cambi di phase + reset stato locale team */
     onPhaseChange(from, to) {
@@ -173,6 +190,9 @@ function ripassoneClient(role) {
     /* helpers per i template */
     isCaptainOf(teamId) { return this.me && this.state?.teams?.[teamId]?.captain_id === this.me.id; },
     myTeam()  { return this.me ? this.state?.teams?.[this.me.team_id] : null; },
+    teamsList()       { return Object.values(this.state?.teams || {}); },
+    teamMembers(tid)  { return Object.values(this.state?.players || {}).filter(p => p.team_id === tid); },
+    teamMemberCount(tid) { return this.teamMembers(tid).length; },
     askingTeam()  {
       const r = this.state?.rounds?.at(-1);
       return r ? this.state?.teams?.[r.asking_team_id] : null;

@@ -51,6 +51,11 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# Mappa player_id -> WebSocket per kick di sessioni duplicate e routing diretto.
+# Vive qui (non in state.py) perche l'oggetto WebSocket appartiene al
+# lifecycle async della connessione, non al modello di gioco.
+_player_ws: dict[str, WebSocket] = {}
+
 
 def state_snapshot() -> dict:
     return {"type": "state/full", "data": state.STATE.model_dump(mode="json")}
@@ -58,6 +63,37 @@ def state_snapshot() -> dict:
 
 async def broadcast_state() -> None:
     await manager.broadcast(state_snapshot())
+
+
+async def kick_old_session(player_id: str, current_ws: WebSocket | None = None) -> None:
+    """Manda team/kicked al WebSocket precedente di player_id e lo chiude.
+    Se current_ws == old_ws (ricollegamento sulla stessa connessione), no-op."""
+    old_ws = _player_ws.get(player_id)
+    if old_ws is None or old_ws is current_ws:
+        return
+    try:
+        await old_ws.send_json({
+            "type": "team/kicked",
+            "msg": "Un altro accesso ha sostituito la tua sessione.",
+        })
+        await old_ws.close()
+    except Exception:
+        pass
+    manager.disconnect(old_ws)
+    _player_ws.pop(player_id, None)
+
+
+def _cleanup_ws_map(ws: WebSocket) -> str | None:
+    """Rimuove ws da _player_ws (se presente) e marca il player offline.
+    Ritorna il player_id se trovato, None altrimenti."""
+    for pid, w in list(_player_ws.items()):
+        if w is ws:
+            _player_ws.pop(pid, None)
+            player = state.STATE.players.get(pid)
+            if player:
+                player.online = False
+            return pid
+    return None
 
 
 # ============================================================
@@ -133,11 +169,14 @@ async def _h_admin_reset(ws: WebSocket, data: dict) -> None:
 
 
 async def _h_team_join(ws: WebSocket, data: dict) -> None:
-    player = await state.team_join(
+    player, replaced = await state.team_join(
         first_name=data["first_name"],
         last_name=data["last_name"],
         team_name=data["team_name"],
     )
+    if replaced:
+        await kick_old_session(player.id, current_ws=ws)
+    _player_ws[player.id] = ws
     await ws.send_json({"type": "team/joined", "data": player.model_dump(mode="json")})
 
 
@@ -147,6 +186,28 @@ async def _h_team_promote_captain(ws: WebSocket, data: dict) -> None:
 
 async def _h_team_vote(ws: WebSocket, data: dict) -> None:
     await state.team_vote(player_id=data["player_id"], option=data["option"])
+
+
+async def _h_team_change_team(ws: WebSocket, data: dict) -> None:
+    await state.team_change_team(
+        player_id=data["player_id"],
+        target_team_name=data["team_name"],
+    )
+
+
+async def _h_team_edit_self(ws: WebSocket, data: dict) -> None:
+    await state.team_edit_self(
+        player_id=data["player_id"],
+        first_name=data["first_name"],
+        last_name=data["last_name"],
+    )
+
+
+async def _h_team_leave(ws: WebSocket, data: dict) -> None:
+    pid = data["player_id"]
+    await state.team_leave(pid)
+    if _player_ws.get(pid) is ws:
+        _player_ws.pop(pid, None)
 
 
 async def _h_captain_choose_question(ws: WebSocket, data: dict) -> None:
@@ -176,6 +237,9 @@ HANDLERS: dict[str, Callable[[WebSocket, dict], Awaitable[None]]] = {
     "team/join":               _h_team_join,
     "team/promote_captain":    _h_team_promote_captain,
     "team/vote":               _h_team_vote,
+    "team/change_team":        _h_team_change_team,
+    "team/edit_self":          _h_team_edit_self,
+    "team/leave":              _h_team_leave,
     "captain/choose_question": _h_captain_choose_question,
     "captain/answer":          _h_captain_answer,
 }
@@ -220,3 +284,5 @@ async def ws_endpoint(ws: WebSocket) -> None:
                 })
     except WebSocketDisconnect:
         manager.disconnect(ws)
+        if _cleanup_ws_map(ws) is not None:
+            await broadcast_state()

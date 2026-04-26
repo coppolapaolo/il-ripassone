@@ -112,6 +112,29 @@ def _team_of_captain(captain_id: str) -> Team | None:
     return None
 
 
+def _find_player_in_team(first: str, last: str, team_id: str) -> Player | None:
+    """Cerca un giocatore con (nome, cognome) case-insensitive in una squadra."""
+    f, l = first.strip().lower(), last.strip().lower()
+    for p in STATE.players.values():
+        if (p.team_id == team_id
+                and p.first_name.lower() == f
+                and p.last_name.lower() == l):
+            return p
+    return None
+
+
+def _cleanup_team_after_member_loss(team_id: str, lost_player_id: str) -> None:
+    """Riassegna capitano (se necessario) e cancella la squadra se rimasta vuota."""
+    team = STATE.teams.get(team_id)
+    if team is None:
+        return
+    if team.captain_id == lost_player_id:
+        others = [p for p in STATE.players.values() if p.team_id == team_id]
+        team.captain_id = others[0].id if others else None
+    if not any(p.team_id == team_id for p in STATE.players.values()):
+        STATE.teams.pop(team_id, None)
+
+
 # ============================================================
 # Handlers — eventi admin
 # ============================================================
@@ -231,9 +254,18 @@ def _open_new_round() -> None:
 # ============================================================
 # Handlers — eventi team / studente
 # ============================================================
-async def team_join(first_name: str, last_name: str, team_name: str) -> Player:
-    """Aggiunge un giocatore. Se la squadra esiste, lo iscrive come membro.
-    Se la squadra e nuova, viene creata e il giocatore e capitano automatico."""
+async def team_join(first_name: str, last_name: str, team_name: str) -> tuple[Player, bool]:
+    """Aggiunge o riusa un giocatore.
+
+    Dedup su (nome, cognome, team_id) case-insensitive: se esiste gia un
+    giocatore con la stessa identita nella stessa squadra, riusa il record
+    esistente (marcandolo online) e ritorna `replaced=True`. Il chiamante
+    (ws.py) usa quel flag per chiudere la WebSocket vecchia.
+
+    Se la squadra non esiste, viene creata. Il primo giocatore della squadra
+    e capitano automatico (semplificazione transitoria; sara sostituito dal
+    voto MJ in CAPTAIN_ELECTION).
+    """
     async with _lock:
         if _phase() not in (Phase.SETUP, Phase.LOBBY):
             raise StateError("I giocatori possono entrare solo in SETUP/LOBBY")
@@ -260,6 +292,12 @@ async def team_join(first_name: str, last_name: str, team_name: str) -> Player:
             )
             STATE.teams[team.id] = team
 
+        # dedup: stesso (nome, cognome, squadra) -> riusa l'id esistente
+        existing = _find_player_in_team(first_name, last_name, team.id)
+        if existing is not None:
+            existing.online = True
+            return existing, True
+
         player = Player(
             id=_new_id(),
             first_name=first_name,
@@ -271,7 +309,79 @@ async def team_join(first_name: str, last_name: str, team_name: str) -> Player:
         if team.captain_id is None:
             team.captain_id = player.id
 
-        return player
+        return player, False
+
+
+async def team_leave(player_id: str) -> None:
+    """Rimuove il giocatore. Auto-elimina la squadra se rimane vuota,
+    riassegna il capitano se necessario."""
+    async with _lock:
+        if _phase() not in (Phase.SETUP, Phase.LOBBY):
+            raise StateError("I giocatori possono uscire solo in SETUP/LOBBY")
+        player = STATE.players.pop(player_id, None)
+        if player is None or not player.team_id:
+            return
+        _cleanup_team_after_member_loss(player.team_id, player.id)
+
+
+async def team_change_team(player_id: str, target_team_name: str) -> None:
+    """Sposta il giocatore in un'altra squadra (esistente o nuova).
+    Se la squadra di partenza rimane vuota, viene eliminata."""
+    async with _lock:
+        if _phase() not in (Phase.SETUP, Phase.LOBBY):
+            raise StateError("Cambio squadra solo in SETUP/LOBBY")
+        player = STATE.players.get(player_id)
+        if player is None:
+            raise StateError("Giocatore non trovato")
+        target_team_name = target_team_name.strip()
+        if not target_team_name:
+            raise StateError("Nome squadra obbligatorio")
+
+        target = _team_by_name(target_team_name)
+        if target is None:
+            if len(STATE.teams) >= 8:
+                raise StateError("Massimo 8 squadre")
+            target = Team(
+                id=_new_id(),
+                name=target_team_name.upper(),
+                color=_next_team_color(),
+                score=STATE.settings.initial_points,
+            )
+            STATE.teams[target.id] = target
+
+        if target.id == player.team_id:
+            return
+
+        if _find_player_in_team(player.first_name, player.last_name, target.id) is not None:
+            raise StateError(f"Esiste gia un omonimo nella squadra {target.name}")
+
+        old_team_id = player.team_id
+        player.team_id = target.id
+        if target.captain_id is None:
+            target.captain_id = player.id
+
+        if old_team_id and old_team_id in STATE.teams:
+            _cleanup_team_after_member_loss(old_team_id, player.id)
+
+
+async def team_edit_self(player_id: str, first_name: str, last_name: str) -> None:
+    """Modifica nome/cognome del giocatore (correzione typo)."""
+    async with _lock:
+        if _phase() not in (Phase.SETUP, Phase.LOBBY):
+            raise StateError("Modifica anagrafica solo in SETUP/LOBBY")
+        player = STATE.players.get(player_id)
+        if player is None:
+            raise StateError("Giocatore non trovato")
+        first_name = first_name.strip()
+        last_name = last_name.strip()
+        if not first_name or not last_name:
+            raise StateError("Nome e cognome obbligatori")
+        if player.team_id:
+            existing = _find_player_in_team(first_name, last_name, player.team_id)
+            if existing is not None and existing.id != player.id:
+                raise StateError("Esiste gia un omonimo nella tua squadra")
+        player.first_name = first_name
+        player.last_name = last_name
 
 
 async def team_promote_captain(player_id: str) -> None:
