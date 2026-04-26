@@ -233,6 +233,9 @@ function ripassoneClient(role) {
       const r = this.currentRound();
       return r?.question_id ? this.state?.questions_pool?.[r.question_id] : null;
     },
+    selectedQuestion() {
+      return this.selectedQuestionId ? this.state?.questions_pool?.[this.selectedQuestionId] : null;
+    },
 
     /* === scelta del capitano (TURN_CHOICE) === */
     availableLectures() {
