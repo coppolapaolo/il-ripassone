@@ -237,6 +237,25 @@ function ripassoneClient(role) {
       return this.selectedQuestionId ? this.state?.questions_pool?.[this.selectedQuestionId] : null;
     },
 
+    /* === conteggi round (1 round = 1 giro completo, ogni squadra pone una volta) === */
+    nTeamsInGame() {
+      return (this.state?.turn_order?.length) || Object.keys(this.state?.teams || {}).length || 1;
+    },
+    sfidePlayed() { return this.state?.rounds?.length || 0; },
+    sfideTotali() { return (this.state?.settings?.rounds || 0) * this.nTeamsInGame(); },
+    currentRoundNum() {
+      // Giro corrente (1-based): ogni N_teams sfide e un nuovo giro
+      const played = this.sfidePlayed();
+      if (played === 0) return 1;
+      return Math.floor((played - 1) / this.nTeamsInGame()) + 1;
+    },
+    currentSfidaInRound() {
+      // Posizione (1-based) della sfida corrente nel giro
+      const played = this.sfidePlayed();
+      if (played === 0) return 1;
+      return ((played - 1) % this.nTeamsInGame()) + 1;
+    },
+
     /* === scelta del capitano (TURN_CHOICE) === */
     availableLectures() {
       const ls = new Set();

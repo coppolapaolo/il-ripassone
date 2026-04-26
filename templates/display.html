@@ -41,12 +41,18 @@
   <!-- ===== HEADER: Round (sx) + Hero (centro) + Countdown (dx) ===== -->
   <header class="grid items-center gap-6" style="grid-template-columns: auto 1fr auto;">
 
-    <!-- Round badge -->
-    <div class="toon toon-cream toon-sm px-5 py-3 flex items-baseline gap-2.5 rotate-1">
-      <span class="display-font text-sm uppercase">Round</span>
-      <span class="display-font text-4xl leading-none" x-text="state?.rounds?.length || 0"></span>
-      <span class="text-2xl" style="color:var(--navy-soft)">/</span>
-      <span class="display-font text-3xl leading-none" x-text="state?.settings?.rounds || '?'"></span>
+    <!-- Round badge: giro X/Y + sfida nel giro -->
+    <div class="toon toon-cream toon-sm px-5 py-3 flex flex-col items-center gap-0.5 rotate-1">
+      <div class="flex items-baseline gap-2">
+        <span class="display-font text-sm uppercase">Giro</span>
+        <span class="display-font text-4xl leading-none" x-text="currentRoundNum()"></span>
+        <span class="text-2xl" style="color:var(--navy-soft)">/</span>
+        <span class="display-font text-3xl leading-none" x-text="state?.settings?.rounds || '?'"></span>
+      </div>
+      <div class="text-[11px]" style="color:var(--navy-soft)">
+        sfida <span class="display-font" style="color:var(--navy)" x-text="currentSfidaInRound()"></span>/<span x-text="nTeamsInGame()"></span>
+        · <b style="color:var(--navy)" x-text="sfidePlayed()"></b>/<span x-text="sfideTotali()"></span> tot
+      </div>
     </div>
 
     <!-- Hero centrale -->

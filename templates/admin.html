@@ -97,8 +97,11 @@
         <h2 class="display-font text-xl mb-3">⚙ Parametri sfida</h2>
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1">
-            <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Numero round</span>
+            <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Numero round (giri)</span>
             <input type="number" min="1" x-model.number="settings.rounds" class="input-toon display-font text-xl">
+            <span class="text-[10px]" style="color:var(--navy-soft)">
+              1 round = 1 turno per ogni squadra. Con N squadre e R round si giocano N×R sfide totali.
+            </span>
           </label>
           <label class="flex flex-col gap-1">
             <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">Tempo per domanda (s)</span>
@@ -380,7 +383,9 @@
         </div>
         <div class="flex flex-col gap-1 min-w-0">
           <div class="display-font text-xs uppercase" style="color:var(--navy-soft)">
-            Round <span x-text="state?.rounds?.length"></span>/<span x-text="state?.settings?.rounds"></span>
+            Giro <span x-text="currentRoundNum()"></span>/<span x-text="state?.settings?.rounds"></span>
+            · sfida <span x-text="currentSfidaInRound()"></span>/<span x-text="nTeamsInGame()"></span>
+            · <b style="color:var(--navy)" x-text="sfidePlayed()"></b>/<span x-text="sfideTotali()"></span> tot
             · phase <b style="color:var(--navy)" x-text="state?.phase"></b>
           </div>
           <template x-if="currentRound() && currentRound()?.asking_team_id">

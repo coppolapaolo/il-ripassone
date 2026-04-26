@@ -51,8 +51,8 @@ Stampa in console:
 6. Admin clicca *Chiudi elezioni e annuncia capitani* → fase **PRE_GAME**
 7. **PRE_GAME**: capitani annunciati su tutti i client. Solo il capitano può rinominare la sua squadra. Il cambio squadra è bloccato. Edit nome/cognome ancora possibile. L'admin può tornare alle elezioni se serve.
 8. Admin clicca *Avvia sfida* (sorteggia ordine, apre primo turno)
-9. Loop: capitano sceglie domanda+puntata+target → countdown → risposta → reveal → *Next turn*
-10. A fine round: classifica finale su `/display` e tab Partita di admin
+9. Loop: capitano sceglie domanda+puntata+target → countdown → risposta → reveal → *Next turn*. Un *round* è un giro completo: ogni squadra pone una domanda una volta. Con N squadre e R round si giocano N×R sfide totali.
+10. A fine sfida: classifica finale su `/display` e tab Partita di admin
 
 ### Test con dati precompilati
 

@@ -330,12 +330,17 @@ async def admin_start_quiz() -> None:
 
 
 async def admin_next_turn() -> None:
-    """TURN_REVEAL -> TURN_CHOICE (incrementa turno) o -> FINISHED se esauriti round."""
+    """TURN_REVEAL -> TURN_CHOICE oppure FINISHED.
+
+    Un "round" e un giro completo: ogni squadra pone una domanda una volta.
+    Con N squadre e R round si giocano N*R sfide totali (= len(STATE.rounds)).
+    """
     async with _lock:
         if _phase() != Phase.TURN_REVEAL:
             raise StateError("next_turn solo da TURN_REVEAL")
 
-        if len(STATE.rounds) >= STATE.settings.rounds:
+        total_sfide = STATE.settings.rounds * len(STATE.turn_order)
+        if len(STATE.rounds) >= total_sfide:
             transition(Phase.FINISHED)
             return
 
