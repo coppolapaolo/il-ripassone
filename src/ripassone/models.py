@@ -17,6 +17,7 @@ class Phase(str, Enum):
     """Stati della state machine di gioco."""
     SETUP = "setup"                 # admin sta configurando
     LOBBY = "lobby"                 # studenti si connettono e formano squadre
+    CAPTAIN_ELECTION = "captain_election"  # voto MJ per scegliere il capitano
     READY_TO_START = "ready_to_start"  # ordine sorteggiato, in attesa start
     TURN_CHOICE = "turn_choice"     # capitano di turno sceglie domanda
     TURN_QUESTION = "turn_question" # countdown attivo, in attesa risposta
@@ -113,6 +114,13 @@ class GameState(BaseModel):
 
     rounds: list[Round] = Field(default_factory=list)
     countdown_seconds_left: int | None = None
+
+    # Voti capitano (Majority Judgment), attivi durante CAPTAIN_ELECTION:
+    #   {team_id: {voter_player_id: {candidate_player_id: grade_1_to_5}}}
+    # Scala: 5=Eccellente, 4=Buono, 3=Accettabile, 2=Scarso, 1=Inadeguato
+    captain_votes: dict[str, dict[str, dict[str, int]]] = Field(default_factory=dict)
+    # Capitano provvisorio per squadra, ricalcolato dal server dopo ogni voto.
+    provisional_captains: dict[str, str] = Field(default_factory=dict)
 
     @property
     def current_round(self) -> Round | None:

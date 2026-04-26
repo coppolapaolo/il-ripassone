@@ -204,35 +204,50 @@
     </aside>
   </main>
 
-  <!-- ==================== TAB: LOBBY ==================== -->
+  <!-- ==================== TAB: LOBBY + ELEZIONI ==================== -->
   <main x-show="tab === 'lobby'" x-cloak class="flex flex-col gap-3">
+
+    <!-- Bar status + bottoni di transizione -->
     <section class="toon p-4 flex flex-wrap items-center gap-3">
-      <span class="display-font text-sm uppercase" style="color:var(--navy-soft)">Lobby</span>
+      <span class="display-font text-sm uppercase" style="color:var(--navy-soft)">
+        <template x-if="state?.phase === 'captain_election'"><span>Elezioni capitano</span></template>
+        <template x-if="state?.phase !== 'captain_election'"><span>Lobby</span></template>
+      </span>
       <span class="text-sm">
         <span class="display-font text-lg" x-text="Object.keys(state?.teams || {}).length"></span> squadre,
         <span class="display-font text-lg" x-text="Object.keys(state?.players || {}).length"></span> giocatori
       </span>
       <span class="ml-auto"></span>
-      <button class="btn-toon coral" @click="send('admin/start_quiz')" :disabled="state?.phase !== 'lobby'">▶ Avvia sfida</button>
+
+      <!-- LOBBY: bottone "apri elezioni" -->
+      <button class="btn-toon teal" x-show="state?.phase === 'lobby'"
+              @click="send('admin/open_captain_election')">⚖ Apri elezioni capitano</button>
+
+      <!-- CAPTAIN_ELECTION: torna in lobby + avvia sfida -->
+      <button class="btn-action" x-show="state?.phase === 'captain_election'"
+              @click="if(confirm('Tornare in lobby e annullare i voti raccolti?')) send('admin/back_to_lobby')">↩ Torna in lobby</button>
+      <button class="btn-toon coral" x-show="state?.phase === 'captain_election'"
+              @click="send('admin/start_quiz')">▶ Avvia sfida</button>
     </section>
 
+    <!-- Dashboard squadre/elezioni -->
     <section class="toon p-4">
       <div class="display-font text-sm uppercase mb-3" style="color:var(--navy-soft)">Squadre</div>
-      <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+
+      <!-- LOBBY: vista compatta (come prima) -->
+      <div x-show="state?.phase === 'lobby'" class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
         <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
           <div class="toon-sm toon p-3" :style="`border-color:${t.color}; box-shadow: 3px 3px 0 ${t.color};`">
             <div class="flex items-center justify-between mb-1">
               <span class="display-font text-base" :style="`color:${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></span>
-              <span class="display-font text-xl tabular-nums" x-text="t.score"></span>
-            </div>
-            <div class="text-[11px] mb-1.5" style="color:var(--navy-soft)">
-              capitano: <b style="color:var(--navy)" x-text="state?.players?.[t.captain_id]?.first_name + ' ' + state?.players?.[t.captain_id]?.last_name"></b>
+              <span class="text-xs" :style="teamMemberCount(t.id) >= 2 ? 'color:var(--success);' : 'color:var(--coral); font-weight:bold;'">
+                <span x-text="teamMemberCount(t.id)"></span> membri
+              </span>
             </div>
             <div class="text-[11px] flex flex-wrap gap-1">
-              <template x-for="p in Object.values(state?.players || {}).filter(p => p.team_id === t.id)" :key="p.id">
+              <template x-for="p in teamMembers(t.id)" :key="p.id">
                 <span class="px-1.5 py-0.5 rounded toon-sm toon" style="background:#fff; box-shadow: 2px 2px 0 var(--navy); border-width: 1.5px;">
                   <span x-text="p.first_name + ' ' + p.last_name"></span>
-                  <span x-show="p.id === t.captain_id" style="color:var(--coral)" class="font-bold">★</span>
                 </span>
               </template>
             </div>
@@ -240,6 +255,50 @@
         </template>
         <template x-if="!Object.keys(state?.teams || {}).length">
           <div class="text-sm py-3" style="color:var(--navy-soft)">Nessuna squadra ancora. Apri <code class="mono">/team</code> sui telefoni degli studenti.</div>
+        </template>
+      </div>
+
+      <!-- CAPTAIN_ELECTION: vista con voti ricevuti per ogni candidato + capitano provv. -->
+      <div x-show="state?.phase === 'captain_election'" class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));">
+        <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
+          <div class="toon-sm toon p-3" :style="`border-color:${t.color}; box-shadow: 3px 3px 0 ${t.color};`">
+            <div class="flex items-center justify-between mb-2">
+              <span class="display-font text-base" :style="`color:${t.color}; -webkit-text-stroke:0.4px var(--navy);`" x-text="t.name"></span>
+              <span class="text-[11px]" style="color:var(--navy-soft)">
+                voti: <b style="color:var(--navy)" x-text="teamVoteProgress(t.id).voted"></b>/<span x-text="teamVoteProgress(t.id).total"></span>
+              </span>
+            </div>
+
+            <!-- Capitano provvisorio (in evidenza) -->
+            <div class="text-[11px] mb-2" style="color:var(--navy-soft)">
+              capitano provv.:
+              <template x-if="provisionalCaptain(t.id)">
+                <b style="color:var(--coral)" x-text="state?.players?.[provisionalCaptain(t.id)]?.first_name + ' ' + state?.players?.[provisionalCaptain(t.id)]?.last_name"></b>
+              </template>
+              <template x-if="!provisionalCaptain(t.id)">
+                <i style="color:var(--navy-soft)">in attesa voti…</i>
+              </template>
+            </div>
+
+            <!-- Tabella candidati × voti ricevuti -->
+            <table class="w-full text-[11px]">
+              <thead class="display-font" style="color:var(--navy-soft)">
+                <tr><th class="text-left py-1">Candidato</th><th class="text-right py-1">5</th><th class="text-right py-1">4</th><th class="text-right py-1">3</th><th class="text-right py-1">2</th><th class="text-right py-1">1</th></tr>
+              </thead>
+              <tbody>
+                <template x-for="m in teamMembers(t.id)" :key="m.id">
+                  <tr :class="provisionalCaptain(t.id) === m.id && 'font-bold'">
+                    <td class="py-0.5" :style="provisionalCaptain(t.id) === m.id ? 'color:var(--coral);' : ''" x-text="m.first_name"></td>
+                    <template x-for="g in [5,4,3,2,1]" :key="g">
+                      <td class="text-right tabular-nums py-0.5" x-text="
+                        Object.values(state?.captain_votes?.[t.id] || {}).filter(b => b[m.id] === g).length || ''
+                      "></td>
+                    </template>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </template>
       </div>
     </section>

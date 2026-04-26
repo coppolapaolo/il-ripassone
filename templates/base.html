@@ -130,7 +130,7 @@ function ripassoneClient(role) {
             this.settings = JSON.parse(JSON.stringify(msg.data.settings));
             // se il quiz e gia in corso, vai automaticamente alla tab Partita
             if (msg.data.phase && msg.data.phase.startsWith('turn_')) this.tab = 'game';
-            else if (msg.data.phase === 'lobby') this.tab = 'lobby';
+            else if (['lobby','captain_election'].includes(msg.data.phase)) this.tab = 'lobby';
           }
           this.state = msg.data;
           this.countdown = msg.data.countdown_seconds_left;
@@ -193,6 +193,37 @@ function ripassoneClient(role) {
     teamsList()       { return Object.values(this.state?.teams || {}); },
     teamMembers(tid)  { return Object.values(this.state?.players || {}).filter(p => p.team_id === tid); },
     teamMemberCount(tid) { return this.teamMembers(tid).length; },
+
+    /* === Majority Judgment (CAPTAIN_ELECTION) === */
+    mjLabels: { 5: 'Eccellente', 4: 'Buono', 3: 'Accettabile', 2: 'Scarso', 1: 'Inadeguato' },
+    mjGrades: [5, 4, 3, 2, 1],
+    mjColor(g) {
+      return { 5:'#15803D', 4:'#65A30D', 3:'#D9A52F', 2:'#EA580C', 1:'#DC2626' }[g] || '#6B7280';
+    },
+    myBallot(candidateId) {
+      // Ritorna il voto dato da me a candidateId (o null)
+      if (!this.me) return null;
+      const ballots = this.state?.captain_votes?.[this.me.team_id]?.[this.me.id];
+      return ballots ? (ballots[candidateId] ?? null) : null;
+    },
+    voteCaptain(candidateId, grade) {
+      if (!this.me) return;
+      this.send('team/vote_captain', {
+        voter_id: this.me.id,
+        candidate_id: candidateId,
+        grade,
+      });
+    },
+    provisionalCaptain(teamId) {
+      return this.state?.provisional_captains?.[teamId] || null;
+    },
+    teamVoteProgress(teamId) {
+      // ritorna {voted: int, total: int}: quanti membri della squadra hanno votato almeno una volta
+      const ballots = this.state?.captain_votes?.[teamId] || {};
+      const voted = Object.keys(ballots).length;
+      const total = this.teamMemberCount(teamId);
+      return { voted, total };
+    },
     askingTeam()  {
       const r = this.state?.rounds?.at(-1);
       return r ? this.state?.teams?.[r.asking_team_id] : null;

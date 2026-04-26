@@ -146,6 +146,14 @@ async def _h_admin_configure(ws: WebSocket, data: dict) -> None:
     await state.admin_configure(settings)
 
 
+async def _h_admin_open_captain_election(ws: WebSocket, data: dict) -> None:
+    await state.admin_open_captain_election()
+
+
+async def _h_admin_back_to_lobby(ws: WebSocket, data: dict) -> None:
+    await state.admin_back_to_lobby()
+
+
 async def _h_admin_start_quiz(ws: WebSocket, data: dict) -> None:
     await state.admin_start_quiz()
 
@@ -210,6 +218,21 @@ async def _h_team_leave(ws: WebSocket, data: dict) -> None:
         _player_ws.pop(pid, None)
 
 
+async def _h_team_vote_captain(ws: WebSocket, data: dict) -> None:
+    await state.team_vote_captain(
+        voter_id=data["voter_id"],
+        candidate_id=data["candidate_id"],
+        grade=int(data["grade"]),
+    )
+
+
+async def _h_team_rename_team(ws: WebSocket, data: dict) -> None:
+    await state.team_rename_team(
+        player_id=data["player_id"],
+        new_name=data["new_name"],
+    )
+
+
 async def _h_captain_choose_question(ws: WebSocket, data: dict) -> None:
     await state.captain_choose_question(
         captain_id=data["captain_id"],
@@ -228,20 +251,24 @@ async def _h_captain_answer(ws: WebSocket, data: dict) -> None:
 
 
 HANDLERS: dict[str, Callable[[WebSocket, dict], Awaitable[None]]] = {
-    "admin/configure":         _h_admin_configure,
-    "admin/start_quiz":        _h_admin_start_quiz,
-    "admin/next_turn":         _h_admin_next_turn,
-    "admin/end_quiz":          _h_admin_end_quiz,
-    "admin/seed_demo":         _h_admin_seed_demo,
-    "admin/reset":             _h_admin_reset,
-    "team/join":               _h_team_join,
-    "team/promote_captain":    _h_team_promote_captain,
-    "team/vote":               _h_team_vote,
-    "team/change_team":        _h_team_change_team,
-    "team/edit_self":          _h_team_edit_self,
-    "team/leave":              _h_team_leave,
-    "captain/choose_question": _h_captain_choose_question,
-    "captain/answer":          _h_captain_answer,
+    "admin/configure":             _h_admin_configure,
+    "admin/open_captain_election": _h_admin_open_captain_election,
+    "admin/back_to_lobby":         _h_admin_back_to_lobby,
+    "admin/start_quiz":            _h_admin_start_quiz,
+    "admin/next_turn":             _h_admin_next_turn,
+    "admin/end_quiz":              _h_admin_end_quiz,
+    "admin/seed_demo":             _h_admin_seed_demo,
+    "admin/reset":                 _h_admin_reset,
+    "team/join":                   _h_team_join,
+    "team/promote_captain":        _h_team_promote_captain,
+    "team/vote":                   _h_team_vote,
+    "team/change_team":            _h_team_change_team,
+    "team/edit_self":              _h_team_edit_self,
+    "team/leave":                  _h_team_leave,
+    "team/vote_captain":           _h_team_vote_captain,
+    "team/rename_team":            _h_team_rename_team,
+    "captain/choose_question":     _h_captain_choose_question,
+    "captain/answer":              _h_captain_answer,
 }
 
 
