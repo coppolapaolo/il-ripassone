@@ -280,30 +280,18 @@
       </div>
     </div>
 
-    <!-- Capitano provvisorio -->
-    <div class="toon-sm toon p-3" :style="provisionalCaptain(me?.team_id)
-        ? `background: ${myTeam()?.color}22; border-color: ${myTeam()?.color};`
-        : 'background: var(--cream-deep);'">
-      <div class="display-font text-[11px] uppercase mb-1" style="color:var(--navy-soft)">Capitano provvisorio</div>
-      <template x-if="provisionalCaptain(me?.team_id)">
-        <div class="display-font text-xl"
-             :style="`color:${myTeam()?.color}; -webkit-text-stroke:0.4px var(--navy);`"
-             x-text="state?.players?.[provisionalCaptain(me?.team_id)]?.first_name + ' ' + state?.players?.[provisionalCaptain(me?.team_id)]?.last_name"></div>
-      </template>
-      <template x-if="!provisionalCaptain(me?.team_id)">
-        <div class="text-sm" style="color:var(--navy-soft)">In attesa dei primi voti…</div>
-      </template>
-      <div class="text-[11px] mt-1" style="color:var(--navy-soft)">
-        Ricalcolato in tempo reale dopo ogni voto.
+    <!-- Stato voto (senza svelare il capitano provvisorio: eviterebbe l'effetto bandwagon) -->
+    <div class="toon-sm toon p-3" style="background: var(--cream-deep);">
+      <div class="display-font text-[11px] uppercase mb-1" style="color:var(--navy-soft)">Voto in corso</div>
+      <div class="text-sm" style="color:var(--navy-soft)">
+        Il capitano sara annunciato a tutti quando il prof chiudera le elezioni.
       </div>
     </div>
 
     <!-- Lista membri da votare -->
     <div class="flex flex-col gap-2.5">
       <template x-for="member in teamMembers(me?.team_id)" :key="member.id">
-        <div class="toon p-3" :style="provisionalCaptain(me?.team_id) === member.id
-            ? `background: ${myTeam()?.color}22; border-color: ${myTeam()?.color}; box-shadow: 4px 4px 0 ${myTeam()?.color};`
-            : ''">
+        <div class="toon p-3">
           <div class="flex items-center justify-between mb-2">
             <div>
               <div class="display-font text-base"
@@ -312,10 +300,6 @@
                 ▸ sei tu (puoi auto-valutarti)
               </div>
             </div>
-            <template x-if="provisionalCaptain(me?.team_id) === member.id">
-              <span class="display-font text-xs px-2 py-0.5 rounded toon toon-sm"
-                    :style="`background:${myTeam()?.color}; color:#fff; box-shadow: 2px 2px 0 var(--navy);`">★ provv.</span>
-            </template>
           </div>
           <div class="grid grid-cols-5 gap-1.5">
             <template x-for="grade in mjGrades" :key="grade">

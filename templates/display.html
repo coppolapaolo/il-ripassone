@@ -141,21 +141,15 @@
     </div>
     <div class="grid gap-4 w-full max-w-5xl" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
       <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
-        <div class="toon p-4" :style="`border-color:${t.color}; box-shadow: 6px 6px 0 ${t.color};`">
-          <div class="flex items-center justify-between mb-2">
-            <span class="display-font text-2xl" :style="`color:${t.color}; -webkit-text-stroke:0.5px var(--navy);`" x-text="t.name"></span>
-            <span class="text-sm" style="color:var(--navy-soft)">
-              <b style="color:var(--navy)" x-text="teamVoteProgress(t.id).voted"></b>/<span x-text="teamVoteProgress(t.id).total"></span> voti
-            </span>
+        <div class="toon p-4 text-center" :style="`border-color:${t.color}; box-shadow: 6px 6px 0 ${t.color};`">
+          <div class="display-font text-2xl mb-3" :style="`color:${t.color}; -webkit-text-stroke:0.5px var(--navy);`" x-text="t.name"></div>
+          <div class="display-font" style="font-size:48px; color:var(--navy);">
+            <span x-text="teamVoteProgress(t.id).voted"></span>/<span x-text="teamVoteProgress(t.id).total"></span>
           </div>
-          <div class="text-sm" style="color:var(--navy-soft)">capitano provv.</div>
-          <template x-if="provisionalCaptain(t.id)">
-            <div class="display-font text-2xl" style="color:var(--coral); -webkit-text-stroke:0.4px var(--navy);"
-                 x-text="state?.players?.[provisionalCaptain(t.id)]?.first_name + ' ' + state?.players?.[provisionalCaptain(t.id)]?.last_name"></div>
-          </template>
-          <template x-if="!provisionalCaptain(t.id)">
-            <div class="text-base italic" style="color:var(--navy-soft)">in attesa…</div>
-          </template>
+          <div class="text-sm" style="color:var(--navy-soft)">hanno gia votato</div>
+          <div class="display-font text-xs uppercase mt-3" style="color:var(--navy-soft)">
+            Capitano segreto fino alla chiusura
+          </div>
         </div>
       </template>
     </div>

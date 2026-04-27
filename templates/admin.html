@@ -303,26 +303,19 @@
               </span>
             </div>
 
-            <!-- Capitano provvisorio (in evidenza) -->
-            <div class="text-[11px] mb-2" style="color:var(--navy-soft)">
-              capitano provv.:
-              <template x-if="provisionalCaptain(t.id)">
-                <b style="color:var(--coral)" x-text="state?.players?.[provisionalCaptain(t.id)]?.first_name + ' ' + state?.players?.[provisionalCaptain(t.id)]?.last_name"></b>
-              </template>
-              <template x-if="!provisionalCaptain(t.id)">
-                <i style="color:var(--navy-soft)">in attesa voti…</i>
-              </template>
+            <!-- Solo distribuzione grezza dei voti, niente vincitore in tempo reale
+                 (per evitare bias se l-admin condivide lo schermo o legge ad alta voce) -->
+            <div class="text-[10px] mb-2" style="color:var(--navy-soft)">
+              Vincitore visibile dopo "Chiudi elezioni".
             </div>
-
-            <!-- Tabella candidati × voti ricevuti -->
             <table class="w-full text-[11px]">
               <thead class="display-font" style="color:var(--navy-soft)">
                 <tr><th class="text-left py-1">Candidato</th><th class="text-right py-1">5</th><th class="text-right py-1">4</th><th class="text-right py-1">3</th><th class="text-right py-1">2</th><th class="text-right py-1">1</th></tr>
               </thead>
               <tbody>
                 <template x-for="m in teamMembers(t.id)" :key="m.id">
-                  <tr :class="provisionalCaptain(t.id) === m.id && 'font-bold'">
-                    <td class="py-0.5" :style="provisionalCaptain(t.id) === m.id ? 'color:var(--coral);' : ''" x-text="m.first_name"></td>
+                  <tr>
+                    <td class="py-0.5" x-text="m.first_name"></td>
                     <template x-for="g in [5,4,3,2,1]" :key="g">
                       <td class="text-right tabular-nums py-0.5" x-text="
                         Object.values(state?.captain_votes?.[t.id] || {}).filter(b => b[m.id] === g).length || ''
