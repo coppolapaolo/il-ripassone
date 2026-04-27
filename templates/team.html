@@ -325,9 +325,38 @@
     </p>
   </section>
 
-  <!-- ===== PRE_GAME: annuncio capitano + rinomina (solo capitano) ===== -->
+  <!-- ===== PRE_GAME: rinomina (in evidenza, prima del banner) + annuncio capitano ===== -->
   <section x-show="me && state?.phase === 'pre_game'" x-cloak class="contents">
 
+    <!-- Rinomina squadra (solo capitano) — primo elemento, in massima evidenza -->
+    <div x-show="isCaptainOf(me?.team_id)" class="toon toon-coral p-4 nudge" x-cloak
+         x-data='{ newName: "", saved: false }'
+         x-effect="if (myTeam()) newName = newName || myTeam().name">
+      <div class="display-font text-xl text-center mb-1" style="color:#fff; -webkit-text-stroke: 0.4px var(--navy);">
+        📝 Vuoi rinominare la squadra?
+      </div>
+      <div class="text-center text-sm mb-3" style="color:#fff; opacity:0.95;">
+        Adesso e il momento — solo tu, da capitano, puoi farlo.
+      </div>
+      <div class="flex flex-col gap-2">
+        <input class="input-toon display-font text-lg text-center" placeholder="Nuovo nome squadra"
+               x-model="newName" style="background:#fff;">
+        <div class="flex gap-2">
+          <button type="button" class="btn-toon green flex-1"
+                  :disabled="!newName || newName.toUpperCase() === myTeam()?.name"
+                  @click="send('team/rename_team', { player_id: me.id, new_name: newName }); saved = true; setTimeout(() => saved = false, 2000)">
+            <span x-show="!saved">✓ Rinomina</span>
+            <span x-show="saved">✓ salvato!</span>
+          </button>
+          <button type="button" class="btn-action flex-shrink-0"
+                  @click="newName = myTeam()?.name">
+            ↺ mantieni <span x-text="myTeam()?.name"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Banner annuncio capitano -->
     <div class="toon toon-yellow p-4 text-center">
       <div class="display-font text-2xl leading-none mb-1" style="-webkit-text-stroke: 0.5px var(--navy);">★ CAPITANO ELETTO</div>
       <div class="display-font" style="font-size:32px; color:var(--coral); -webkit-text-stroke: 0.6px var(--navy);"
@@ -336,25 +365,6 @@
         <template x-if="isCaptainOf(me?.team_id)"><span><b>Sei tu!</b> Sei il capitano della squadra <b x-text="myTeam()?.name"></b>.</span></template>
         <template x-if="!isCaptainOf(me?.team_id)"><span>e' il capitano della tua squadra <b x-text="myTeam()?.name"></b>.</span></template>
       </div>
-    </div>
-
-    <!-- Rinomina squadra (solo capitano) -->
-    <div x-show="isCaptainOf(me?.team_id)" class="toon p-3" x-cloak
-         x-data='{ openRename: false, newName: "" }'
-         x-effect="if (openRename && myTeam()) newName = newName || myTeam().name">
-      <button type="button" class="w-full flex items-center justify-between" @click="openRename = !openRename">
-        <span class="display-font text-xs uppercase" style="color:var(--coral)">📝 Rinomina la tua squadra</span>
-        <span class="text-xs" style="color:var(--navy-soft)" x-text="openRename ? '▴' : '▾'"></span>
-      </button>
-      <div x-show="openRename" class="mt-2 flex gap-2" x-cloak>
-        <input class="input-toon flex-1" placeholder="Nuovo nome" x-model="newName">
-        <button type="button" class="btn-action warn"
-                :disabled="!newName || newName.toUpperCase() === myTeam()?.name"
-                @click="send('team/rename_team', { player_id: me.id, new_name: newName }); openRename = false">salva</button>
-      </div>
-      <p class="text-[11px] mt-2" style="color:var(--navy-soft)">
-        Solo tu (capitano) puoi cambiare il nome della squadra ora.
-      </p>
     </div>
 
     <!-- Lista membri della squadra -->
