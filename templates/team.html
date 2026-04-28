@@ -287,7 +287,7 @@
 
     <!-- Rinomina squadra (collassabile) -->
     <div class="toon p-3" x-data='{ openRename: false, newName: "" }'
-         x-effect="if (openRename && myTeam()) newName = newName || myTeam().name">
+         x-effect="if (openRename && myTeam() && !newName) newName = myTeam().name">
       <button type="button" class="w-full flex items-center justify-between" @click="openRename = !openRename">
         <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">📝 Rinomina la squadra</span>
         <span class="text-xs" style="color:var(--navy-soft)" x-text="openRename ? '▴' : '▾'"></span>
@@ -295,8 +295,14 @@
       <div x-show="openRename" class="mt-2 flex gap-2" x-cloak>
         <input class="input-toon flex-1" placeholder="Nuovo nome" x-model="newName">
         <button type="button" class="btn-action warn"
-                :disabled="!newName || newName.toUpperCase() === myTeam()?.name"
-                @click="send('team/rename_team', { player_id: me.id, new_name: newName }); openRename = false">salva</button>
+                :disabled="!newName || !newName.trim()"
+                @click="
+                  const target = (newName || '').trim();
+                  if (target && target.toUpperCase() !== (myTeam()?.name || '')) {
+                    send('team/rename_team', { player_id: me.id, new_name: target });
+                  }
+                  openRename = false;
+                ">salva</button>
       </div>
     </div>
 
@@ -350,8 +356,8 @@
 
     <!-- Rinomina squadra (solo capitano) — primo elemento, in massima evidenza -->
     <div x-show="isCaptainOf(me?.team_id)" class="toon toon-coral p-4 nudge" x-cloak
-         x-data='{ newName: "", saved: false }'
-         x-effect="if (myTeam()) newName = newName || myTeam().name">
+         x-data='{ newName: "", feedback: "" }'
+         x-effect="if (myTeam() && !newName) newName = myTeam().name">
       <div class="display-font text-xl text-center mb-1" style="color:#fff; -webkit-text-stroke: 0.4px var(--navy);">
         📝 Vuoi rinominare la squadra?
       </div>
@@ -363,16 +369,27 @@
                x-model="newName" style="background:#fff;">
         <div class="flex gap-2">
           <button type="button" class="btn-toon green flex-1"
-                  :disabled="!newName || newName.toUpperCase() === myTeam()?.name"
-                  @click="send('team/rename_team', { player_id: me.id, new_name: newName }); saved = true; setTimeout(() => saved = false, 2000)">
-            <span x-show="!saved">✓ Rinomina</span>
-            <span x-show="saved">✓ salvato!</span>
+                  :disabled="!newName || !newName.trim()"
+                  @click="
+                    const target = (newName || '').trim();
+                    if (!target) { feedback = '✗ scrivi un nome'; }
+                    else if (target.toUpperCase() === (myTeam()?.name || '')) { feedback = '✓ nome invariato'; }
+                    else { send('team/rename_team', { player_id: me.id, new_name: target }); feedback = '✓ salvato!'; }
+                    setTimeout(() => feedback = '', 2500);
+                  ">
+            <span x-show="!feedback">✓ Rinomina</span>
+            <span x-show="feedback" x-text="feedback"></span>
           </button>
           <button type="button" class="btn-action flex-shrink-0"
-                  @click="newName = myTeam()?.name">
+                  @click="newName = myTeam()?.name; feedback = '';">
             ↺ mantieni <span x-text="myTeam()?.name"></span>
           </button>
         </div>
+        <!-- errore inline ben visibile se il server rifiuta (es. nome duplicato) -->
+        <div x-show="lastError" x-cloak
+             class="text-sm text-center mt-1 px-2 py-1.5 rounded"
+             style="background:#fff; color:var(--coral); font-weight:600;"
+             x-text="'⚠ ' + lastError"></div>
       </div>
     </div>
 

@@ -12,6 +12,7 @@ race conditions con eventi concorrenti.
 from __future__ import annotations
 
 import asyncio
+import os
 import random
 import uuid
 
@@ -58,8 +59,10 @@ MJ_LABELS = {
     1: "Inadeguato",
 }
 
-# Palette colori per le squadre (cartoon-pop)
-TEAM_COLORS = [
+# Palette colori per le squadre.
+# Default cartoon-pop: tinte sature; in modalita serious (env-var
+# RIPASSONE_SERIOUS=1) palette istituzionale ispirata al logo.
+TEAM_COLORS_POP = [
     "#D9A52F",  # giallo deep
     "#2A8893",  # teal deep
     "#E84C3D",  # coral
@@ -69,6 +72,21 @@ TEAM_COLORS = [
     "#0E7490",  # cyan deep
     "#DB2777",  # pink
 ]
+TEAM_COLORS_SERIOUS = [
+    "#1E3A5F",  # navy del logo
+    "#3795B5",  # teal del logo
+    "#B27D1E",  # oro deep
+    "#7C2D12",  # bordeaux
+    "#15803D",  # verde scuro
+    "#5B5B95",  # indaco
+    "#0E7490",  # cyan deep
+    "#9D174D",  # magenta deep
+]
+TEAM_COLORS = (
+    TEAM_COLORS_SERIOUS
+    if os.environ.get("RIPASSONE_SERIOUS") == "1"
+    else TEAM_COLORS_POP
+)
 
 
 class StateError(Exception):
@@ -217,15 +235,29 @@ def _recompute_provisional_captain(team_id: str) -> None:
 # ============================================================
 # Handlers — eventi admin
 # ============================================================
+_CONFIGURE_PHASES = (
+    Phase.SETUP, Phase.LOBBY,
+    Phase.CAPTAIN_ELECTION, Phase.PRE_GAME,
+    Phase.READY_TO_START, Phase.TURN_REVEAL,
+    Phase.FINISHED,
+)
+
+
 async def admin_configure(settings: Settings) -> None:
-    """Imposta i parametri della sfida e passa in LOBBY."""
+    """Imposta i parametri della sfida.
+
+    Da SETUP transita automaticamente in LOBBY. Ammesso anche fra un turno e
+    l'altro (TURN_REVEAL, READY_TO_START): il prossimo countdown userà i nuovi
+    valori. Bloccato durante TURN_CHOICE/TURN_QUESTION: un cambio in corsa
+    sarebbe disorientante (il capitano sta gia deliberando).
+    """
     async with _lock:
-        if _phase() not in (Phase.SETUP, Phase.LOBBY):
+        if _phase() not in _CONFIGURE_PHASES:
             raise StateError(
-                "Le impostazioni si possono modificare solo in SETUP o LOBBY"
+                "Le impostazioni si modificano prima della sfida o fra un turno e l'altro"
             )
         STATE.settings = settings
-        # propaga i punti iniziali alle squadre gia esistenti che sono ancora a 0
+        # propaga i punti iniziali solo alle squadre ancora a 0 (pre-partita)
         for t in STATE.teams.values():
             if t.score == 0:
                 t.score = settings.initial_points

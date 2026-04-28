@@ -172,3 +172,35 @@ body.serious .ribbon-bar {
 body.serious .logo-img {
   mix-blend-mode: multiply;
 }
+
+/* ===== Neutralizzazione "POP residui" =====
+   Rotazioni e animazioni cartoon, e stili inline outlined nei banner. */
+body.serious .nudge { animation: none !important; }
+body.serious .-rotate-1,
+body.serious .-rotate-2,
+body.serious .rotate-1,
+body.serious .rotate-2 {
+  transform: none !important;
+}
+/* Titoli e testi "outlined" (stroke navy + text-shadow): in serious sono piatti.
+   I selettori contestuali con !important vincono sugli style inline dei template. */
+body.serious .display-font,
+body.serious .toon-coral .display-font,
+body.serious .toon-yellow .display-font,
+body.serious .toon-teal .display-font {
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none !important;
+  letter-spacing: 0;
+}
+/* Box-shadow inline cartoon (es. badge "DOMANDA", "X pt") sui banner */
+body.serious .toon-sm[style*="box-shadow"],
+body.serious .toon[style*="box-shadow"] {
+  box-shadow: 0 1px 4px rgba(30,58,95,0.10) !important;
+}
+/* Border accent del colore squadra: lo conserviamo (sobrio anche con palette serious),
+   ma azzeriamo le ombre offset solid che restano POP. */
+body.serious [style*="box-shadow:"][style*="0 var(--navy)"],
+body.serious [style*="box-shadow:"][style*="0 #"],
+body.serious [style*="box-shadow:"][style*="0 rgb"] {
+  box-shadow: 0 2px 6px rgba(30,58,95,0.10) !important;
+}
