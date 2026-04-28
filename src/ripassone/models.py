@@ -95,6 +95,10 @@ class Round(BaseModel):
     points_delta: dict[str, int] = Field(default_factory=dict)  # team_id -> +/- pt
     # voti dei membri non-capitani: player_id -> letter
     member_votes: dict[str, Letter] = Field(default_factory=dict)
+    # Proposte dei membri della squadra che pone, durante TURN_CHOICE.
+    # Non vincolanti: il capitano puo adottarle o ignorarle. Schema:
+    # {player_id: {"question_id": int|None, "bet": int|None, "target": str|None}}
+    member_proposals: dict[str, dict] = Field(default_factory=dict)
 
 
 class GameState(BaseModel):

@@ -419,12 +419,63 @@
     <p class="text-xs mt-3" style="color:var(--navy-soft)">In attesa che l-admin avvii la sfida…</p>
   </section>
 
-  <!-- ===== TURN_CHOICE: capitano della squadra di turno ===== -->
-  <section x-show="me && state?.phase === 'turn_choice' && currentRound()?.asking_team_id === me?.team_id && isCaptainOf(me?.team_id)" x-cloak class="contents">
+  <!-- ===== TURN_CHOICE: tutti i membri della squadra di turno (capitano + membri) ===== -->
+  <section x-show="me && state?.phase === 'turn_choice' && currentRound()?.asking_team_id === me?.team_id" x-cloak class="contents">
 
     <div class="toon toon-coral p-3 nudge text-center">
-      <div class="display-font text-2xl leading-none" style="-webkit-text-stroke: 0.5px var(--navy);">⚡ TOCCA A TE!</div>
-      <div class="text-sm mt-1.5" style="color:#fff;">Scegli una domanda, fissa la puntata e decidi a chi rivolgerla.</div>
+      <template x-if="isCaptainOf(me?.team_id)">
+        <div>
+          <div class="display-font text-2xl leading-none" style="-webkit-text-stroke: 0.5px var(--navy);">⚡ TOCCA A TE!</div>
+          <div class="text-sm mt-1.5" style="color:#fff;">Decidi tu: ascolta i compagni se vuoi, poi scegli e lancia.</div>
+        </div>
+      </template>
+      <template x-if="!isCaptainOf(me?.team_id)">
+        <div>
+          <div class="display-font text-2xl leading-none" style="-webkit-text-stroke: 0.5px var(--navy);">💡 PROPONI AL CAPITANO!</div>
+          <div class="text-sm mt-1.5" style="color:#fff;">Filtra, scegli, suggerisci puntata e bersaglio. Decidera il capitano.</div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Pannello proposte dei compagni (visibile a tutti i membri della squadra che pone) -->
+    <div x-show="memberProposalsList().length"
+         class="toon-sm toon p-3" style="background: var(--cream-deep);">
+      <div class="display-font text-[11px] uppercase mb-2" style="color:var(--navy-soft)">💡 Proposte dei compagni</div>
+      <div class="flex flex-col gap-1.5">
+        <template x-for="prop in memberProposalsList()" :key="prop.player_id">
+          <button type="button" @click="adoptProposal(prop.player_id)"
+                  class="toon-sm toon p-2 text-left flex flex-col gap-0.5"
+                  style="background:#fff;"
+                  :title="isCaptainOf(me?.team_id) ? 'Tocca per adottare questa proposta' : ''">
+            <div class="flex items-center justify-between gap-2">
+              <span class="display-font text-sm" :style="`color:${myTeam()?.color}; -webkit-text-stroke:0.3px var(--navy);`"
+                    x-text="(prop.player?.first_name || '?') + (prop.player_id === me?.id ? ' (tu)' : '')"></span>
+              <template x-if="prop.bet">
+                <span class="display-font text-[11px] px-1.5 py-0.5 toon toon-sm"
+                      style="background:var(--yellow); color:var(--navy); box-shadow:1.5px 1.5px 0 var(--navy);"
+                      x-text="prop.bet + ' pt'"></span>
+              </template>
+            </div>
+            <template x-if="prop.question">
+              <div class="text-[11px] leading-tight" style="color:var(--navy);">
+                <span class="mono" x-text="prop.question.lecture"></span>
+                · <span x-text="prop.question.text.slice(0, 60) + (prop.question.text.length > 60 ? '…' : '')"></span>
+              </div>
+            </template>
+            <template x-if="prop.target">
+              <div class="text-[10px]" style="color:var(--navy-soft)">
+                <template x-if="prop.target === 'open'"><span style="color:var(--teal-deep)">⚡ aperta a tutti</span></template>
+                <template x-if="prop.target !== 'open'">
+                  <span>→ <b :style="`color:${state?.teams?.[prop.target]?.color}`" x-text="state?.teams?.[prop.target]?.name"></b></span>
+                </template>
+              </div>
+            </template>
+          </button>
+        </template>
+      </div>
+      <p class="text-[10px] mt-2" style="color:var(--navy-soft)" x-show="isCaptainOf(me?.team_id)">
+        Tocca una proposta per adottarla automaticamente nei tuoi campi.
+      </p>
     </div>
 
     <!-- ===== STATO A: nessuna domanda scelta -> filtri + lista ===== -->
@@ -569,16 +620,29 @@
     </template>
 
     <div class="cta-sticky-wrap mt-auto">
-      <button class="answer-cta" :disabled="!canConfirmChoice()" @click="confirmChoice()">
-        <template x-if="!selectedQuestionId"><span>SCEGLI UNA DOMANDA</span></template>
-        <template x-if="selectedQuestionId && !target"><span>SCEGLI A CHI RIVOLGERLA</span></template>
-        <template x-if="selectedQuestionId && target"><span>LANCIA · <span x-text="bet"></span> pt</span></template>
-      </button>
+      <!-- CAPITANO: bottone LANCIA che chiama captain/choose_question -->
+      <template x-if="isCaptainOf(me?.team_id)">
+        <button class="answer-cta" :disabled="!canConfirmChoice()" @click="confirmChoice()">
+          <template x-if="!selectedQuestionId"><span>SCEGLI UNA DOMANDA</span></template>
+          <template x-if="selectedQuestionId && !target"><span>SCEGLI A CHI RIVOLGERLA</span></template>
+          <template x-if="selectedQuestionId && target"><span>LANCIA · <span x-text="bet"></span> pt</span></template>
+        </button>
+      </template>
+      <!-- MEMBRO: bottone PROPONI che chiama team/propose_choice -->
+      <template x-if="!isCaptainOf(me?.team_id)">
+        <button class="answer-cta" style="background: var(--teal);"
+                :disabled="!selectedQuestionId && !target && !bet"
+                @click="proposeChoice()">
+          <span x-show="!selectedQuestionId && !target">💡 PROPONI (anche solo bet/target)</span>
+          <span x-show="selectedQuestionId && !target">💡 PROPONI «<span x-text="selectedQuestion()?.lecture"></span>»</span>
+          <span x-show="selectedQuestionId && target">💡 PROPONI · <span x-text="bet"></span> pt</span>
+        </button>
+      </template>
     </div>
   </section>
 
-  <!-- ===== TURN_CHOICE: NON il capitano di turno ===== -->
-  <section x-show="me && state?.phase === 'turn_choice' && !(currentRound()?.asking_team_id === me?.team_id && isCaptainOf(me?.team_id))" class="toon p-5 text-center" x-cloak>
+  <!-- ===== TURN_CHOICE: NON nella squadra di turno ===== -->
+  <section x-show="me && state?.phase === 'turn_choice' && currentRound()?.asking_team_id !== me?.team_id" class="toon p-5 text-center" x-cloak>
     <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">In attesa</div>
     <div class="display-font text-xl" :style="`color:${askingTeam()?.color}; -webkit-text-stroke:0.5px var(--navy);`" x-text="askingTeam()?.name"></div>
     <div class="text-sm mt-1" style="color:var(--navy-soft)">sta scegliendo la domanda…</div>

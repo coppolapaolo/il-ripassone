@@ -204,6 +204,15 @@ async def _h_team_vote(ws: WebSocket, data: dict) -> None:
     await state.team_vote(player_id=data["player_id"], option=data["option"])
 
 
+async def _h_team_propose_choice(ws: WebSocket, data: dict) -> None:
+    await state.team_propose_choice(
+        player_id=data["player_id"],
+        question_id=data.get("question_id"),
+        bet=data.get("bet"),
+        target=data.get("target"),
+    )
+
+
 async def _h_team_change_team(ws: WebSocket, data: dict) -> None:
     await state.team_change_team(
         player_id=data["player_id"],
@@ -272,6 +281,7 @@ HANDLERS: dict[str, Callable[[WebSocket, dict], Awaitable[None]]] = {
     "team/join":                   _h_team_join,
     "team/promote_captain":        _h_team_promote_captain,
     "team/vote":                   _h_team_vote,
+    "team/propose_choice":         _h_team_propose_choice,
     "team/change_team":            _h_team_change_team,
     "team/edit_self":              _h_team_edit_self,
     "team/leave":                  _h_team_leave,

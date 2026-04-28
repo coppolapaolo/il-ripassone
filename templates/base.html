@@ -299,6 +299,34 @@ function ripassoneClient(role) {
       });
     },
 
+    /* === proposte dei membri (TURN_CHOICE) === */
+    proposeChoice() {
+      if (!this.me) return;
+      this.send('team/propose_choice', {
+        player_id: this.me.id,
+        question_id: this.selectedQuestionId || null,
+        bet: this.bet || null,
+        target: this.target || null,
+      });
+    },
+    memberProposalsList() {
+      const proposals = this.currentRound()?.member_proposals || {};
+      return Object.entries(proposals).map(([pid, p]) => ({
+        player_id: pid,
+        player: this.state?.players?.[pid],
+        question: p.question_id ? this.state?.questions_pool?.[p.question_id] : null,
+        bet: p.bet,
+        target: p.target,
+      }));
+    },
+    adoptProposal(pid) {
+      const p = this.currentRound()?.member_proposals?.[pid];
+      if (!p) return;
+      if (p.question_id) this.selectedQuestionId = p.question_id;
+      if (p.bet) this.bet = p.bet;
+      if (p.target) this.target = p.target;
+    },
+
     /* === risposta / voto (TURN_QUESTION) === */
     canAnswer() {
       if (!this.isCaptainOf(this.me?.team_id)) return false;

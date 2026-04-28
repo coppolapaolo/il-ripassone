@@ -631,6 +631,37 @@ async def team_promote_captain(player_id: str) -> None:
         team.captain_id = player.id
 
 
+async def team_propose_choice(
+    player_id: str,
+    question_id: int | None,
+    bet: int | None,
+    target: str | None,
+) -> None:
+    """Proposta non vincolante di un membro della squadra che pone, durante
+    TURN_CHOICE. Il capitano puo adottarla (UI) o ignorarla.
+
+    Sovrascrive una proposta precedente dello stesso membro. Il server non
+    valida il singolo campo (puo essere parziale: solo domanda, solo bet,
+    ecc.) — la validazione finale e a carico del capitano via choose_question.
+    """
+    async with _lock:
+        if _phase() != Phase.TURN_CHOICE:
+            raise StateError("Le proposte sono ammesse solo in TURN_CHOICE")
+        round_ = STATE.current_round
+        if round_ is None:
+            raise StateError("Nessun round in corso")
+        player = STATE.players.get(player_id)
+        if player is None:
+            raise StateError("Giocatore sconosciuto")
+        if player.team_id != round_.asking_team_id:
+            raise StateError("Solo i membri della squadra che pone possono proporre")
+        round_.member_proposals[player_id] = {
+            "question_id": int(question_id) if question_id is not None else None,
+            "bet": int(bet) if bet is not None else None,
+            "target": target if target else None,
+        }
+
+
 async def team_vote(player_id: str, option: Letter) -> None:
     """Voto del membro non-capitano: si registra nel round corrente.
     Visibile (a tutti per ora; in tappa 4 sara routing scoped al solo capitano)."""
