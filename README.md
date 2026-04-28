@@ -32,6 +32,14 @@ Stampa in console:
 - 🔑 Password admin
 - 📱 QR code ASCII per `/team`
 
+#### Opzioni CLI
+
+| Flag | Effetto |
+|---|---|
+| `--public` | Avvia ngrok e pubblica un URL accessibile da rete cellulare. |
+| `--no-reload` | Disattiva l'autoreload di uvicorn. **Consigliato in aula**: un edit accidentale ai sorgenti azzererebbe la partita in corso (lo stato è in RAM). |
+| `--serious` | Grafica accademico-istituzionale: logo "Il Ripassone" del corso, palette navy/teal/oro, font Playfair Display + Inter, niente flash full-screen. Default: cartoon-pop. |
+
 ### 2. In aula
 
 | Chi | Cosa apre | Note |
@@ -47,12 +55,13 @@ Stampa in console:
 2. Admin tab **Setup**: carica i `.xlsx` con le domande proposte dagli studenti
 3. Studenti aprono `/team` da QR e si iscrivono (squadra esistente come opzione cliccabile, oppure crea nuova). Min 2 membri/squadra.
 4. Admin tab **Lobby**: clicca *Apri elezioni capitano*
-5. **Elezioni**: ogni studente vota i membri della propria squadra su 5 livelli (Eccellente/Buono/Accettabile/Scarso/Inadeguato). Il capitano provvisorio (Majority Judgment) è ricalcolato in tempo reale e visibile in admin/team. Si può rinominare la squadra, correggere nome/cognome, cambiare squadra.
+5. **Elezioni**: ogni studente vota i membri della propria squadra su 5 livelli (Eccellente/Buono/Accettabile/Scarso/Inadeguato). Il capitano provvisorio (Majority Judgment) è ricalcolato lato server ma **non** mostrato durante le votazioni — viene rivelato solo alla chiusura, per evitare effetto bandwagon. L'admin vede solo la distribuzione grezza dei voti. Si può rinominare la squadra, correggere nome/cognome, cambiare squadra.
 6. Admin clicca *Chiudi elezioni e annuncia capitani* → fase **PRE_GAME**
 7. **PRE_GAME**: capitani annunciati su tutti i client. Solo il capitano può rinominare la sua squadra. Il cambio squadra è bloccato. Edit nome/cognome ancora possibile. L'admin può tornare alle elezioni se serve.
 8. Admin clicca *Avvia sfida* (sorteggia ordine, apre primo turno)
-9. Loop: durante TURN_CHOICE i membri possono filtrare il pool e **proporre** domanda+puntata+bersaglio. Le proposte sono visibili a tutta la squadra che pone; il capitano può adottarne una con un tap o decidere autonomamente, e poi lanciare. Countdown → risposta → reveal → *Next turn*. Un *round* è un giro completo: ogni squadra pone una domanda una volta. Con N squadre e R round si giocano N×R sfide totali.
-10. A fine sfida: classifica finale su `/display` e tab Partita di admin
+9. Loop: durante TURN_CHOICE i membri possono filtrare il pool e **proporre** domanda+puntata+bersaglio. Le proposte appaiono come chip colorati sotto ciascuna opzione (target/domanda) e nel riepilogo sotto lo slider della puntata; il capitano può adottarne una con un tap o decidere autonomamente. Countdown → risposta → reveal → *Next turn*. Tra un turno e l'altro l'admin può modificare i tempi (sezione *⏱ Tempi prossimo turno* nella tab Partita): il nuovo `seconds` e i `time_factors` valgono dal turno seguente. Un *round* è un giro completo: con N squadre e R round si giocano N×R sfide totali.
+10. La tab **Lobby** di admin resta consultabile in ogni fase: durante la sfida mostra le squadre con capitano + membri, e lo storico dei voti dell'elezione (read-only).
+11. A fine sfida: classifica finale su `/display` e tab Partita di admin
 
 ### Test con dati precompilati
 
@@ -80,8 +89,8 @@ di domande:
 
 ### Comportamento del countdown
 
-Il countdown è **server-side** (asyncio task) e dura `seconds × time_factor[difficolta]` (default `0.7 / 1.0 / 1.4`).
-Cambia colore a 10s (giallo) e a 5s (rosso pulsante) sul display, con flash full-screen e suoni.
+Il countdown è **server-side** (asyncio task) e dura `seconds × time_factor[difficolta]` (default `0.5 / 1.0 / 1.4` su `seconds=90`).
+Cambia colore a 10s (giallo) e a 5s (rosso pulsante) sul display, con flash full-screen e suoni (il flash è disattivato in modalità `--serious`).
 
 ### Regole di scoring
 
@@ -114,7 +123,10 @@ quizzone/
 │   ├── state.py            # state machine + handlers
 │   └── ws.py               # ConnectionManager + dispatch
 ├── templates/{base,admin,team,display,login,info}.html
-├── static/{css/cartoon.css, img/hero.png}
+├── static/
+│   ├── css/cartoon.css     # design system cartoon-pop (default)
+│   ├── css/serious.css     # override modalità --serious (accademico)
+│   └── img/{hero.png, logo_serious.png}
 └── mockups/                # mockup HTML autonomi (riferimento design)
 ```
 
