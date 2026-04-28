@@ -48,6 +48,7 @@ class Player(BaseModel):
     last_name: str
     team_id: str | None = None
     online: bool = True
+    last_seen: float = 0.0  # epoch seconds dell'ultimo ping/evento ricevuto
 
     @property
     def display_name(self) -> str:
@@ -116,6 +117,8 @@ class GameState(BaseModel):
 
     turn_order: list[str] = Field(default_factory=list)  # team_ids sorteggiati
     current_turn_idx: int = 0  # indice in turn_order della squadra che pone
+    rounds_completed: int = 0  # giri completi gia conclusi (le squadre a score<=0 vengono saltate)
+    current_lap_start_round: int = 0  # indice in rounds[] di inizio del giro corrente
 
     rounds: list[Round] = Field(default_factory=list)
     countdown_seconds_left: int | None = None

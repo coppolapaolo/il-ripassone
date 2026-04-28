@@ -31,6 +31,14 @@
   <div class="text-sm mt-1" x-text="kickedMessage"></div>
 </div>
 
+<!-- Banner connessione persa: visibile se disconnessi mentre stiamo giocando -->
+<div x-show="!connected && me" x-cloak
+     class="fixed top-3 left-1/2 -translate-x-1/2 z-50 toon p-3 max-w-md text-center"
+     style="background: var(--yellow); color: var(--navy);">
+  <div class="display-font text-base">🔌 Connessione persa</div>
+  <div class="text-xs mt-1">Riconnessione in corso…</div>
+</div>
+
 <!-- Status WS sempre visibile in basso a destra (debug bar minimale) -->
 <div class="fixed bottom-3 right-3 z-50 toon-sm toon px-3 py-1.5 flex items-center gap-2"
      style="background: rgba(255,255,255,0.96); font-size: 11px;">
@@ -100,6 +108,10 @@ function ripassoneClient(role) {
     audioReady: false, muted: false,
     prevPhase: null,
     me: JSON.parse(localStorage.getItem('ripassone.me') || 'null'),
+    /* riconnessione: backoff + heartbeat */
+    reconnectAttempt: 0,
+    heartbeatTimer: null,
+    rejoinPending: false,  /* flag: appena (ri)connesso e abbiamo me, manda team/rejoin */
 
     /* stato locale per le viste team (capitano sceglie / risponde) */
     selectedQuestionId: null,
@@ -120,8 +132,29 @@ function ripassoneClient(role) {
     connect() {
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       this.ws = new WebSocket(`${proto}://${location.host}/ws`);
-      this.ws.onopen  = () => { this.connected = true; };
-      this.ws.onclose = () => { this.connected = false; };
+      this.ws.onopen  = () => {
+        this.connected = true;
+        this.reconnectAttempt = 0;
+        // se siamo gia un player, prova a riagganciarci subito
+        if (this.role === 'team' && this.me && this.me.first_name) {
+          this.send('team/rejoin', { first_name: this.me.first_name, last_name: this.me.last_name });
+        }
+        // heartbeat per liberare sessioni "appese" lato server entro ~25s
+        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        this.heartbeatTimer = setInterval(() => {
+          if (this.me && this.ws && this.ws.readyState === 1) {
+            this.send('team/heartbeat', { player_id: this.me.id });
+          }
+        }, 10000);
+      };
+      this.ws.onclose = () => {
+        this.connected = false;
+        if (this.heartbeatTimer) { clearInterval(this.heartbeatTimer); this.heartbeatTimer = null; }
+        // backoff esponenziale capped: 1s, 2s, 4s, 8s, poi 8s
+        const delay = Math.min(8000, 1000 * Math.pow(2, this.reconnectAttempt));
+        this.reconnectAttempt++;
+        setTimeout(() => this.connect(), delay);
+      };
       this.ws.onerror = () => { this.lastError = 'WebSocket error'; };
       this.ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
@@ -242,23 +275,31 @@ function ripassoneClient(role) {
       return this.selectedQuestionId ? this.state?.questions_pool?.[this.selectedQuestionId] : null;
     },
 
-    /* === conteggi round (1 round = 1 giro completo, ogni squadra pone una volta) === */
+    /* === conteggi round (1 round = 1 giro completo del turn_order;
+           le squadre a score<=0 vengono saltate, quindi un giro puo
+           contenere meno sfide del numero di squadre) === */
     nTeamsInGame() {
       return (this.state?.turn_order?.length) || Object.keys(this.state?.teams || {}).length || 1;
     },
+    nTeamsActive() {
+      const ids = this.state?.turn_order || [];
+      return ids.filter(id => (this.state?.teams?.[id]?.score || 0) > 0).length || this.nTeamsInGame();
+    },
     sfidePlayed() { return this.state?.rounds?.length || 0; },
-    sfideTotali() { return (this.state?.settings?.rounds || 0) * this.nTeamsInGame(); },
+    sfideTotali() {
+      // Stima ottimistica: rounds × numero di squadre attive ora.
+      // Se squadre vanno a zero in seguito, le sfide reali saranno meno.
+      return (this.state?.settings?.rounds || 0) * this.nTeamsActive();
+    },
     currentRoundNum() {
-      // Giro corrente (1-based): ogni N_teams sfide e un nuovo giro
-      const played = this.sfidePlayed();
-      if (played === 0) return 1;
-      return Math.floor((played - 1) / this.nTeamsInGame()) + 1;
+      // Giro corrente (1-based) letto dal server.
+      return (this.state?.rounds_completed || 0) + 1;
     },
     currentSfidaInRound() {
-      // Posizione (1-based) della sfida corrente nel giro
+      // Sfide gia incluse nel giro corrente, contate dall'inizio del lap.
       const played = this.sfidePlayed();
-      if (played === 0) return 1;
-      return ((played - 1) % this.nTeamsInGame()) + 1;
+      const lapStart = this.state?.current_lap_start_round || 0;
+      return Math.max(1, played - lapStart);
     },
 
     /* === scelta del capitano (TURN_CHOICE) === */
@@ -313,6 +354,15 @@ function ripassoneClient(role) {
         bet: this.bet || null,
         target: this.target || null,
       });
+    },
+    /* Live-proposta automatica: se sei membro non capitano, ogni cambio
+       (domanda/target/bet) viene inoltrato subito al capitano. Stesso pattern
+       delle risposte in TURN_QUESTION (clicchi e basta, niente bottone). */
+    autoPropose() {
+      if (this.state?.phase !== 'turn_choice') return;
+      if (!this.me || this.me?.team_id !== this.currentRound()?.asking_team_id) return;
+      if (this.isCaptainOf(this.me.team_id)) return;
+      this.proposeChoice();
     },
     memberProposalsList() {
       const proposals = this.currentRound()?.member_proposals || {};

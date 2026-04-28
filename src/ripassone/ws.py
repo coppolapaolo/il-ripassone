@@ -196,6 +196,27 @@ async def _h_team_join(ws: WebSocket, data: dict) -> None:
     await ws.send_json({"type": "team/joined", "data": player.model_dump(mode="json")})
 
 
+async def _h_team_rejoin(ws: WebSocket, data: dict) -> None:
+    """Riconnette uno studente con (nome, cognome). Ammesso in qualsiasi fase.
+    Il check anti-scherzo (sessione attiva → rifiuto) e in state.team_rejoin."""
+    player, replaced = await state.team_rejoin(
+        first_name=data["first_name"],
+        last_name=data["last_name"],
+    )
+    if replaced:
+        await kick_old_session(player.id, current_ws=ws)
+    _player_ws[player.id] = ws
+    await ws.send_json({"type": "team/joined", "data": player.model_dump(mode="json")})
+
+
+async def _h_team_heartbeat(ws: WebSocket, data: dict) -> None:
+    """Heartbeat dal client (~ogni 10s). Aggiorna last_seen, niente broadcast."""
+    pid = data.get("player_id")
+    if not pid:
+        return
+    await state.team_heartbeat(player_id=pid)
+
+
 async def _h_team_promote_captain(ws: WebSocket, data: dict) -> None:
     await state.team_promote_captain(player_id=data["player_id"])
 
@@ -279,6 +300,8 @@ HANDLERS: dict[str, Callable[[WebSocket, dict], Awaitable[None]]] = {
     "admin/seed_demo":             _h_admin_seed_demo,
     "admin/reset":                 _h_admin_reset,
     "team/join":                   _h_team_join,
+    "team/rejoin":                 _h_team_rejoin,
+    "team/heartbeat":              _h_team_heartbeat,
     "team/promote_captain":        _h_team_promote_captain,
     "team/vote":                   _h_team_vote,
     "team/propose_choice":         _h_team_propose_choice,
@@ -321,7 +344,9 @@ async def ws_endpoint(ws: WebSocket) -> None:
                 continue
             try:
                 await handler(ws, data)
-                await broadcast_state()
+                # heartbeat: solo aggiornamento last_seen, niente fan-out
+                if event_type != "team/heartbeat":
+                    await broadcast_state()
             except state.StateError as e:
                 await ws.send_json({"type": "state/error", "msg": str(e)})
             except (KeyError, ValueError, TypeError) as e:

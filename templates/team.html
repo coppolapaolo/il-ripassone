@@ -176,10 +176,20 @@
     </form>
   </section>
 
-  <!-- ===== Iscrizione chiusa ===== -->
-  <section x-show="!me && !['setup','lobby'].includes(state?.phase)" class="toon p-4" x-cloak>
+  <!-- ===== Iscrizione chiusa: form rejoin per chi era gia iscritto ===== -->
+  <section x-show="!me && !['setup','lobby'].includes(state?.phase)" class="toon p-4" x-cloak
+           x-data='{ f: "", l: "" }'>
     <div class="display-font text-lg" style="color:var(--coral)">⛔ Iscrizione chiusa</div>
-    <p class="text-sm mt-1" style="color:var(--navy-soft)">La sfida e gia in corso (fase: <span x-text="state?.phase"></span>). Chiedi all-admin di reset se serve riaprire.</p>
+    <p class="text-sm mt-1 mb-3" style="color:var(--navy-soft)">La sfida e gia in corso (fase: <span x-text="state?.phase"></span>).</p>
+    <div class="display-font text-xs uppercase mb-2" style="color:var(--navy-soft)">Sei stato disconnesso? Riconnettiti</div>
+    <form @submit.prevent="send('team/rejoin', { first_name: f, last_name: l })" class="flex flex-col gap-2">
+      <input class="input-toon" placeholder="Nome" x-model="f" required>
+      <input class="input-toon" placeholder="Cognome" x-model="l" required>
+      <button class="btn-toon coral" type="submit" :disabled="!f || !l">↻ Mi ricollego</button>
+    </form>
+    <p class="text-[11px] mt-2" style="color:var(--navy-soft)">
+      Funziona solo se eri gia iscritto a questa sfida. Se una sessione con lo stesso nome e gia attiva, la riconnessione e bloccata: chiudi l-altro dispositivo o aspetta qualche secondo.
+    </p>
   </section>
 
   <!-- ===== HEADER squadra (me presente) ===== -->
@@ -559,7 +569,7 @@
         <!-- Lista domande filtrate -->
         <div class="flex flex-col gap-2">
           <template x-for="q in filteredQuestions()" :key="q.id">
-            <button type="button" @click="selectedQuestionId = q.id"
+            <button type="button" @click="selectedQuestionId = q.id; autoPropose()"
                     class="toon-sm toon p-3 text-left transition-all"
                     :style="proposersForQuestion(q.id).length ? 'border-color:var(--coral); box-shadow: 3px 3px 0 var(--coral);' : ''">
               <div class="flex items-start justify-between gap-2 mb-1.5">
@@ -595,7 +605,7 @@
     <template x-if="selectedQuestionId">
       <div class="contents">
         <!-- Domanda scelta (clic per deselezionare e tornare alla ricerca) -->
-        <button type="button" @click="selectedQuestionId = null"
+        <button type="button" @click="selectedQuestionId = null; autoPropose()"
                 class="toon p-3 text-left transition-all toon-yellow"
                 style="border-color:var(--coral); box-shadow: 5px 5px 0 var(--coral);">
           <div class="flex items-start justify-between gap-2 mb-1.5">
@@ -628,7 +638,8 @@
         </div>
         <input type="range" :min="state?.settings?.min_bet || 5"
                             :max="Math.min(state?.settings?.max_bet || 50, myTeam()?.score || 50)"
-                            step="1" x-model.number="bet" class="bet-slider">
+                            step="1" x-model.number="bet" class="bet-slider"
+                            @change="autoPropose()">
         <div class="flex justify-between text-[10px] mt-1" style="color:var(--navy-soft)">
           <span>min <span x-text="state?.settings?.min_bet"></span></span>
           <span>max <span x-text="Math.min(state?.settings?.max_bet || 50, myTeam()?.score || 50)"></span></span>
@@ -646,7 +657,7 @@
         <div class="flex flex-col gap-2">
           <button type="button" class="target-pill" :class="target === 'open' && 'on'"
                   :style="target === 'open' ? 'background: linear-gradient(135deg, var(--teal) 0%, var(--teal-deep) 100%);' : ''"
-                  @click="target = 'open'">
+                  @click="target = 'open'; autoPropose()">
             <span class="target-radio"></span>
             <span class="display-font text-base leading-none">⚡ APERTA A TUTTI</span>
             <span class="ml-auto text-[11px]" :class="target === 'open' && 'opacity-90'">primo blocca</span>
@@ -660,7 +671,7 @@
           <template x-for="opp in opponents()" :key="opp.id">
             <button type="button" class="target-pill" :class="target === opp.id && 'on'"
                     :style="target === opp.id ? `background: ${opp.color};` : ''"
-                    @click="target = opp.id">
+                    @click="target = opp.id; autoPropose()">
               <span class="target-radio"></span>
               <span class="display-font text-base leading-none"
                     :style="target === opp.id ? '' : `color: ${opp.color}; -webkit-text-stroke: 0.4px var(--navy);`"
@@ -690,15 +701,14 @@
           <template x-if="selectedQuestionId && target"><span>LANCIA · <span x-text="bet"></span> pt</span></template>
         </button>
       </template>
-      <!-- MEMBRO: bottone PROPONI che chiama team/propose_choice -->
+      <!-- MEMBRO: feedback statico, niente bottone. Le scelte sono inviate
+           automaticamente al capitano appena si tocca domanda/target/bet
+           (stesso pattern delle risposte in TURN_QUESTION). -->
       <template x-if="!isCaptainOf(me?.team_id)">
-        <button class="answer-cta" style="background: var(--teal);"
-                :disabled="!selectedQuestionId && !target && !bet"
-                @click="proposeChoice()">
-          <span x-show="!selectedQuestionId && !target">💡 PROPONI (anche solo bet/target)</span>
-          <span x-show="selectedQuestionId && !target">💡 PROPONI «<span x-text="selectedQuestion()?.lecture"></span>»</span>
-          <span x-show="selectedQuestionId && target">💡 PROPONI · <span x-text="bet"></span> pt</span>
-        </button>
+        <div class="answer-cta cursor-default" style="background: var(--teal); pointer-events:none;">
+          <span x-show="!selectedQuestionId && !target && !bet">💡 Tocca una domanda, una puntata o un bersaglio: il capitano vede la tua proposta in tempo reale</span>
+          <span x-show="selectedQuestionId || target || bet">💡 La tua proposta è visibile al capitano</span>
+        </div>
       </template>
     </div>
   </section>

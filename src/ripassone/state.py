@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import os
 import random
+import time
 import uuid
 
 from ripassone.models import (
@@ -150,6 +151,16 @@ def _find_player_in_team(first: str, last: str, team_id: str) -> Player | None:
         if (p.team_id == team_id
                 and p.first_name.lower() == f
                 and p.last_name.lower() == l):
+            return p
+    return None
+
+
+def _find_player_by_name(first: str, last: str) -> Player | None:
+    """Cerca un giocatore con (nome, cognome) case-insensitive ovunque.
+    Usato per il rejoin: lo studente non deve ricordare il nome squadra."""
+    f, l = first.strip().lower(), last.strip().lower()
+    for p in STATE.players.values():
+        if p.first_name.lower() == f and p.last_name.lower() == l:
             return p
     return None
 
@@ -364,19 +375,45 @@ async def admin_start_quiz() -> None:
 async def admin_next_turn() -> None:
     """TURN_REVEAL -> TURN_CHOICE oppure FINISHED.
 
-    Un "round" e un giro completo: ogni squadra pone una domanda una volta.
-    Con N squadre e R round si giocano N*R sfide totali (= len(STATE.rounds)).
+    Un "round" e un giro completo: ogni squadra **attiva** (score>0) pone una
+    domanda una volta. Le squadre con score<=0 vengono saltate al loro turno
+    e si va alla successiva. La squadra a zero resta in classifica e puo
+    rispondere alle domande aperte: se torna sopra zero, al giro successivo
+    tornera a porre.
+
+    Fine partita quando si sono completati `settings.rounds` giri, oppure
+    quando nessuna squadra ha piu score>0.
     """
     async with _lock:
         if _phase() != Phase.TURN_REVEAL:
             raise StateError("next_turn solo da TURN_REVEAL")
 
-        total_sfide = STATE.settings.rounds * len(STATE.turn_order)
-        if len(STATE.rounds) >= total_sfide:
+        n = len(STATE.turn_order)
+        prev_idx = STATE.current_turn_idx
+        next_idx: int | None = None
+        wrapped = False
+        for step in range(1, n + 1):
+            cand = (prev_idx + step) % n
+            if cand <= prev_idx:
+                wrapped = True
+            team = STATE.teams.get(STATE.turn_order[cand])
+            if team and team.score > 0:
+                next_idx = cand
+                break
+
+        if next_idx is None:
+            # Nessuna squadra attiva: fine partita
             transition(Phase.FINISHED)
             return
 
-        STATE.current_turn_idx = (STATE.current_turn_idx + 1) % len(STATE.turn_order)
+        if wrapped:
+            STATE.rounds_completed += 1
+            STATE.current_lap_start_round = len(STATE.rounds)
+            if STATE.rounds_completed >= STATE.settings.rounds:
+                transition(Phase.FINISHED)
+                return
+
+        STATE.current_turn_idx = next_idx
         _open_new_round()
         transition(Phase.TURN_CHOICE)
 
@@ -502,6 +539,57 @@ async def team_join(first_name: str, last_name: str, team_name: str) -> tuple[Pl
             team.captain_id = player.id
 
         return player, False
+
+
+# Soglia: una sessione marcata "online" ma silenziosa da piu di REJOIN_GRACE
+# secondi viene considerata morta (browser killato senza FIN/RST). Liberiamo
+# il posto. La grace deve essere maggiore dell'intervallo di heartbeat client.
+REJOIN_GRACE_SECONDS = 25.0
+
+
+async def team_rejoin(first_name: str, last_name: str) -> tuple[Player, bool]:
+    """Riaggancia uno studente gia iscritto a una sessione precedente.
+
+    Identifica per (nome, cognome) case-insensitive su tutti i player. Se la
+    sessione precedente e ancora considerata viva (online + heartbeat recente),
+    rifiuta per evitare che un terzo si sostituisca per scherzo. Se la
+    sessione e silenziosa da piu di REJOIN_GRACE_SECONDS, la consideriamo
+    morta e ammettiamo la riconnessione.
+
+    Ritorna (player, replaced) dove replaced=True significa che la sessione
+    precedente era ancora associata a un WebSocket e il chiamante deve
+    chiuderla (kick_old_session in ws.py).
+    """
+    async with _lock:
+        first_name = first_name.strip()
+        last_name = last_name.strip()
+        if not first_name or not last_name:
+            raise StateError("Nome e cognome sono obbligatori")
+        player = _find_player_by_name(first_name, last_name)
+        if player is None:
+            raise StateError("Non risulti iscritto a questa partita")
+        replaced = player.online
+        if replaced:
+            elapsed = time.time() - (player.last_seen or 0.0)
+            if elapsed < REJOIN_GRACE_SECONDS:
+                raise StateError(
+                    "Una sessione con questo nome e gia attiva. "
+                    "Se sei tu, chiudi l'altra finestra. Altrimenti riprova fra qualche secondo."
+                )
+        player.online = True
+        player.last_seen = time.time()
+        return player, replaced
+
+
+async def team_heartbeat(player_id: str) -> None:
+    """Aggiorna il last_seen del player. Inviato dal client ogni ~10s."""
+    async with _lock:
+        player = STATE.players.get(player_id)
+        if player is None:
+            return  # silently ignore: il player potrebbe essere stato rimosso
+        player.last_seen = time.time()
+        if not player.online:
+            player.online = True
 
 
 async def team_leave(player_id: str) -> None:
