@@ -277,8 +277,9 @@
         </template>
       </div>
 
-      <!-- PRE_GAME: capitani annunciati, lista con squadre e capitano in evidenza -->
-      <div x-show="state?.phase === 'pre_game'" class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+      <!-- PRE_GAME e oltre: capitani annunciati + lista membri (resta visibile durante la sfida) -->
+      <div x-show="['pre_game','ready_to_start','turn_choice','turn_question','turn_reveal','finished'].includes(state?.phase)"
+           class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
         <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
           <div class="toon-sm toon p-4" :style="`border-color:${t.color}; box-shadow: 4px 4px 0 ${t.color};`">
             <div class="flex items-baseline justify-between mb-2">
@@ -301,8 +302,15 @@
         </template>
       </div>
 
-      <!-- CAPTAIN_ELECTION: vista con voti ricevuti per ogni candidato + capitano provv. -->
-      <div x-show="state?.phase === 'captain_election'" class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));">
+      <!-- CAPTAIN_ELECTION (live) e fasi successive (storico): voti ricevuti per ogni candidato.
+           Durante captain_election: live, niente vincitore. Dopo: storico read-only con capitano in evidenza. -->
+      <section x-show="['captain_election','pre_game','ready_to_start','turn_choice','turn_question','turn_reveal','finished'].includes(state?.phase) && Object.keys(state?.captain_votes || {}).length"
+               x-cloak class="mt-4 pt-3" style="border-top: 2px solid var(--cream-deep);">
+        <div class="display-font text-sm uppercase mb-3" style="color:var(--navy-soft)">
+          <template x-if="state?.phase === 'captain_election'"><span>📊 Voti elezione capitano (in corso)</span></template>
+          <template x-if="state?.phase !== 'captain_election'"><span>📊 Storico voti elezione capitano</span></template>
+        </div>
+      <div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));">
         <template x-for="t in Object.values(state?.teams || {})" :key="t.id">
           <div class="toon-sm toon p-3" :style="`border-color:${t.color}; box-shadow: 3px 3px 0 ${t.color};`">
             <div class="flex items-center justify-between mb-2">
@@ -312,10 +320,12 @@
               </span>
             </div>
 
-            <!-- Solo distribuzione grezza dei voti, niente vincitore in tempo reale
-                 (per evitare bias se l-admin condivide lo schermo o legge ad alta voce) -->
-            <div class="text-[10px] mb-2" style="color:var(--navy-soft)">
+            <!-- Durante l'elezione: niente vincitore. Dopo: capitano in evidenza. -->
+            <div class="text-[10px] mb-2" style="color:var(--navy-soft)" x-show="state?.phase === 'captain_election'">
               Vincitore visibile dopo "Chiudi elezioni".
+            </div>
+            <div class="text-[11px] mb-2" x-show="state?.phase !== 'captain_election' && t.captain_id">
+              ★ <span class="display-font" style="color:var(--navy);" x-text="state?.players?.[t.captain_id]?.first_name + ' ' + state?.players?.[t.captain_id]?.last_name"></span>
             </div>
             <table class="w-full text-[11px]">
               <thead class="display-font" style="color:var(--navy-soft)">
@@ -337,6 +347,7 @@
           </div>
         </template>
       </div>
+    </section>
     </section>
   </main>
 
