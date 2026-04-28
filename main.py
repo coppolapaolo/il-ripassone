@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import signal
 import subprocess
 import sys
@@ -113,7 +114,14 @@ def main() -> None:
         "--no-reload", action="store_true",
         help="Disabilita il reload automatico (utile in produzione)",
     )
+    parser.add_argument(
+        "--serius", action="store_true",
+        help="Grafica accademico-istituzionale (default: cartoon-pop)",
+    )
     args = parser.parse_args()
+
+    if args.serius:
+        os.environ["RIPASSONE_SERIUS"] = "1"
 
     ngrok_proc: subprocess.Popen | None = None
     public_url: str | None = None
@@ -130,7 +138,6 @@ def main() -> None:
 
     # propaga URL pubblico nell'ambiente per /info
     if public_url:
-        import os
         os.environ["RIPASSONE_PUBLIC_URL"] = public_url
 
     # cleanup graceful
