@@ -115,13 +115,13 @@ def main() -> None:
         help="Disabilita il reload automatico (utile in produzione)",
     )
     parser.add_argument(
-        "--serius", action="store_true",
+        "--serious", action="store_true",
         help="Grafica accademico-istituzionale (default: cartoon-pop)",
     )
     args = parser.parse_args()
 
-    if args.serius:
-        os.environ["RIPASSONE_SERIUS"] = "1"
+    if args.serious:
+        os.environ["RIPASSONE_SERIOUS"] = "1"
 
     ngrok_proc: subprocess.Popen | None = None
     public_url: str | None = None

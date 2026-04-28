@@ -36,15 +36,15 @@ def _public_base(request: Request) -> str:
     return f"{request.url.scheme}://{request.url.netloc}"
 
 
-def _serius() -> bool:
-    """Modalita grafica accademico-istituzionale (set da main.py --serius)."""
-    return os.environ.get("RIPASSONE_SERIUS") == "1"
+def _serious() -> bool:
+    """Modalita grafica accademico-istituzionale (set da main.py --serious)."""
+    return os.environ.get("RIPASSONE_SERIOUS") == "1"
 
 app = FastAPI(title="Il Ripassone")
 
 app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=config.TEMPLATES_DIR)
-templates.env.globals["serius"] = _serius()
+templates.env.globals["serious"] = _serious()
 app.include_router(ws_router)
 
 

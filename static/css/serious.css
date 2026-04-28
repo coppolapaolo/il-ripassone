@@ -1,10 +1,10 @@
 /* =====================================================
-   IL RIPASSONE — Modalita serius (accademico-istituzionale)
-   Override di cartoon.css quando body.serius e attivo.
+   IL RIPASSONE — Modalita serious (accademico-istituzionale)
+   Override di cartoon.css quando body.serious e attivo.
    Palette dal logo: navy/teal/azzurro/oro su sfondo chiaro.
    ===================================================== */
 
-body.serius {
+body.serious {
   /* Palette ridefinita: stessi nomi di variabile, valori istituzionali */
   --teal:        #3795B5;
   --teal-deep:   #1E3A5F;     /* navy del logo come "deep" */
@@ -30,40 +30,40 @@ body.serius {
   background-size: auto, auto;
 }
 
-body.serius .display-font {
+body.serious .display-font {
   font-family: 'Playfair Display', Georgia, serif;
   letter-spacing: 0;
   font-weight: 700;
 }
-body.serius .mono { font-family: 'JetBrains Mono', monospace; }
+body.serious .mono { font-family: 'JetBrains Mono', monospace; }
 
 /* ===== Pannelli: ombre soft, bordi sottili ===== */
-body.serius .toon {
+body.serious .toon {
   border: 1px solid var(--cream-deep);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(30, 58, 95, 0.08);
 }
-body.serius .toon-sm {
+body.serious .toon-sm {
   border-width: 1px; border-radius: 8px;
   box-shadow: 0 1px 4px rgba(30, 58, 95, 0.06);
 }
-body.serius .toon-lg {
+body.serious .toon-lg {
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(30, 58, 95, 0.10);
 }
-body.serius .toon-yellow { background: var(--yellow); color: var(--navy); }
-body.serius .toon-coral  { background: var(--coral);  color: #fff; }
-body.serius .toon-teal   { background: var(--teal);   color: #fff; }
-body.serius .toon-cream  { background: var(--cream-deep); }
+body.serious .toon-yellow { background: var(--yellow); color: var(--navy); }
+body.serious .toon-coral  { background: var(--coral);  color: #fff; }
+body.serious .toon-teal   { background: var(--teal);   color: #fff; }
+body.serious .toon-cream  { background: var(--cream-deep); }
 
-body.serius .title-outlined {
+body.serious .title-outlined {
   color: var(--navy);
   -webkit-text-stroke: 0;
   text-shadow: none;
 }
 
 /* ===== Bottoni: pieni, bordo sottile, hover sobrio ===== */
-body.serius .btn-toon {
+body.serious .btn-toon {
   background: #fff;
   border: 1px solid var(--cream-deep);
   border-radius: 8px;
@@ -72,79 +72,79 @@ body.serius .btn-toon {
   font-weight: 600;
   letter-spacing: 0.01em;
 }
-body.serius .btn-toon:hover {
+body.serious .btn-toon:hover {
   transform: none;
   box-shadow: 0 2px 6px rgba(30, 58, 95, 0.15);
   background: var(--cream-deep);
 }
-body.serius .btn-toon.coral  { background: var(--coral); color: #fff; border-color: var(--coral-deep); }
-body.serius .btn-toon.teal   { background: var(--teal);  color: #fff; border-color: var(--teal-deep); }
-body.serius .btn-toon.green  { background: var(--green); color: #fff; border-color: transparent; }
-body.serius .btn-toon.yellow { background: var(--yellow); color: var(--navy); border-color: var(--yellow-deep); }
-body.serius .btn-toon:disabled { opacity: 0.45; }
+body.serious .btn-toon.coral  { background: var(--coral); color: #fff; border-color: var(--coral-deep); }
+body.serious .btn-toon.teal   { background: var(--teal);  color: #fff; border-color: var(--teal-deep); }
+body.serious .btn-toon.green  { background: var(--green); color: #fff; border-color: transparent; }
+body.serious .btn-toon.yellow { background: var(--yellow); color: var(--navy); border-color: var(--yellow-deep); }
+body.serious .btn-toon:disabled { opacity: 0.45; }
 
 /* ===== Inputs ===== */
-body.serius .input-toon {
+body.serious .input-toon {
   border: 1px solid #C8D3DD;
   border-radius: 8px;
   box-shadow: none;
 }
-body.serius .input-toon:focus {
+body.serious .input-toon:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px rgba(55, 149, 181, 0.18);
 }
 
 /* ===== Countdown ring ===== */
-body.serius .ring-track    { stroke: var(--cream-deep); }
-body.serius .ring-progress { stroke: var(--teal); }
-body.serius .ring-progress.warn   { stroke: var(--yellow); }
-body.serius .ring-progress.danger { stroke: var(--coral); }
+body.serious .ring-track    { stroke: var(--cream-deep); }
+body.serious .ring-progress { stroke: var(--teal); }
+body.serious .ring-progress.warn   { stroke: var(--yellow); }
+body.serious .ring-progress.danger { stroke: var(--coral); }
 
 /* ===== Reveal opzione ===== */
-body.serius .reveal-correct {
+body.serious .reveal-correct {
   background: #E5F4EA !important;
   border-color: var(--success) !important;
   box-shadow: 0 2px 8px rgba(63, 138, 92, 0.30);
   animation: none;
 }
-body.serius .reveal-correct .opt-letter {
+body.serious .reveal-correct .opt-letter {
   background: var(--success) !important; color: #fff !important;
 }
-body.serius .reveal-wrong { opacity: 0.40; }
+body.serious .reveal-wrong { opacity: 0.40; }
 
 /* ===== Flash overlay disabilitato (troppo "game show") ===== */
-body.serius .flash-overlay { display: none !important; }
+body.serious .flash-overlay { display: none !important; }
 
 /* ===== Audio gate ===== */
-body.serius .audio-gate {
+body.serious .audio-gate {
   background: rgba(30, 58, 95, 0.92);
 }
-body.serius .audio-gate-card {
+body.serious .audio-gate-card {
   border: 1px solid var(--cream-deep);
   border-radius: 16px;
   box-shadow: 0 16px 48px rgba(30, 58, 95, 0.40);
   transform: none;
 }
-body.serius .gate-cta {
+body.serious .gate-cta {
   background: var(--coral); color: #fff;
   border: 1px solid var(--coral-deep); border-radius: 10px;
   box-shadow: 0 2px 6px rgba(200, 75, 58, 0.30);
   font-family: 'Inter', system-ui, sans-serif; font-weight: 700;
   letter-spacing: 0.02em;
 }
-body.serius .gate-cta:hover {
+body.serious .gate-cta:hover {
   transform: none;
   background: var(--coral-deep);
   box-shadow: 0 4px 12px rgba(200, 75, 58, 0.40);
 }
 
 /* ===== Sticky CTA mobile ===== */
-body.serius .cta-sticky-wrap {
+body.serious .cta-sticky-wrap {
   background: linear-gradient(180deg, rgba(244,247,250,0) 0%, rgba(244,247,250,0.95) 30%, var(--cream) 100%);
 }
 
 /* ===== Opzioni risposta ===== */
-body.serius .opt-letter {
+body.serious .opt-letter {
   background: var(--cream-deep);
   color: var(--navy);
   border: 1px solid #C8D3DD;
@@ -153,17 +153,17 @@ body.serius .opt-letter {
 }
 
 /* ===== Vote chip ===== */
-body.serius .vote-chip {
+body.serious .vote-chip {
   border: 1px solid #C8D3DD;
   box-shadow: none;
 }
 
 /* ===== Team band ===== */
-body.serius .team-cell.highlight-asking    { background: var(--yellow); color: var(--navy); }
-body.serius .team-cell.highlight-answering { background: var(--teal);   color: #fff; }
+body.serious .team-cell.highlight-asking    { background: var(--yellow); color: var(--navy); }
+body.serious .team-cell.highlight-answering { background: var(--teal);   color: #fff; }
 
 /* ===== Ribbon: linea sobria invece di bandiera arlecchino ===== */
-body.serius .ribbon-bar {
+body.serious .ribbon-bar {
   height: 3px;
   background: linear-gradient(90deg, var(--teal) 0%, var(--navy) 50%, var(--yellow) 100%);
   border: 0;
