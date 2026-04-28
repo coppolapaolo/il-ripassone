@@ -120,9 +120,13 @@
 
   <!-- ===== HEADER mini logo ===== -->
   <header class="flex items-center justify-between">
+    {% if serious %}
+    <img src="/static/img/logo_serious.png" alt="Il Ripassone" class="logo-img h-10 w-auto"/>
+    {% else %}
     <div class="toon toon-sm toon-yellow px-3 py-1.5 -rotate-1">
       <h1 class="display-font text-lg title-outlined leading-none">IL RIPASSONE!</h1>
     </div>
+    {% endif %}
     <span class="display-font text-[11px] uppercase" style="color:var(--navy-soft)">▸ Squadra</span>
   </header>
 

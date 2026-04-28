@@ -5,29 +5,26 @@
    ===================================================== */
 
 body.serious {
-  /* Palette ridefinita: stessi nomi di variabile, valori istituzionali */
-  --teal:        #3795B5;
-  --teal-deep:   #1E3A5F;     /* navy del logo come "deep" */
-  --coral:       #C84B3A;     /* CTA piu sobrio, meno saturato */
-  --coral-deep:  #A03929;
+  /* Palette dal mockup commit 44aa2ec, allineata al logo */
+  --teal:        #3795B5;     /* accento teal del logo */
+  --teal-deep:   #1E3A5F;     /* navy del logo */
+  --coral:       #B91C1C;     /* danger sobrio (--danger del mockup) */
+  --coral-deep:  #991B1B;
   --yellow:      #E8A93C;     /* oro */
-  --yellow-deep: #B6831F;
-  --cream:       #F4F7FA;     /* azzurro chiaro */
-  --cream-deep:  #E1EAF1;
-  --navy:        #1E3A5F;
-  --navy-soft:   #4A6481;
-  --pink:        #B4D4DF;     /* azzurro tenue */
-  --green:       #3F8A5C;
+  --yellow-deep: #B27D1E;
+  --cream:       #F4F7FA;     /* paper del mockup */
+  --cream-deep:  #E2E8F0;     /* rule del mockup */
+  --navy:        #1E3A5F;     /* navy del logo */
+  --navy-soft:   #475569;     /* ink-soft del mockup */
+  --pink:        #7FB9CC;     /* azure del mockup */
+  --green:       #15803D;
   --purple:      #6B5B95;
-  --success:     #3F8A5C;
-  --danger:      #C84B3A;
+  --success:     #15803D;     /* success del mockup */
+  --danger:      #B91C1C;     /* danger del mockup */
 
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--cream);
-  background-image:
-    radial-gradient(circle at 0% 0%, rgba(55,149,181,0.08) 0%, transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(30,58,95,0.06) 0%, transparent 45%);
-  background-size: auto, auto;
+  background-image: none;
 }
 
 body.serious .display-font {
@@ -162,11 +159,16 @@ body.serious .vote-chip {
 body.serious .team-cell.highlight-asking    { background: var(--yellow); color: var(--navy); }
 body.serious .team-cell.highlight-answering { background: var(--teal);   color: #fff; }
 
-/* ===== Ribbon: linea sobria invece di bandiera arlecchino ===== */
+/* ===== Ribbon: accent-bar sobria del mockup (navy/teal/azure) ===== */
 body.serious .ribbon-bar {
-  height: 3px;
-  background: linear-gradient(90deg, var(--teal) 0%, var(--navy) 50%, var(--yellow) 100%);
+  height: 4px;
+  background: linear-gradient(90deg, var(--navy) 0%, var(--teal) 50%, var(--pink) 100%);
   border: 0;
-  border-radius: 0;
+  border-radius: 2px;
   box-shadow: none;
+}
+
+/* ===== Logo: il PNG ha sfondo bianco, lo fondiamo con il paper ===== */
+body.serious .logo-img {
+  mix-blend-mode: multiply;
 }

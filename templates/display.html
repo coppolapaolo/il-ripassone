@@ -31,7 +31,11 @@
   <!-- ===== AUDIO GATE iniziale ===== -->
   <div x-show="!audioReady" class="audio-gate" x-cloak>
     <div class="audio-gate-card">
+      {% if serious %}
+      <img src="/static/img/logo_serious.png" alt="Il Ripassone" class="logo-img h-24 w-auto mx-auto mb-4"/>
+      {% else %}
       <img src="/static/img/hero.png" alt="Il Ripassone!" class="h-40 w-auto mx-auto mb-4"/>
+      {% endif %}
       <p class="text-xl mb-7" style="color:var(--navy)">Clicca per attivare l-audio<br/>e iniziare la sfida</p>
       <button class="gate-cta" @click="enableAudio()">▶ AVVIA</button>
       <div class="text-xs mt-5" style="color:var(--navy-soft)">(richiesto dal browser per sbloccare l-audio)</div>
@@ -57,8 +61,12 @@
 
     <!-- Hero centrale -->
     <div class="flex justify-center">
+      {% if serious %}
+      <img src="/static/img/logo_serious.png" alt="Il Ripassone" class="logo-img h-32 w-auto"/>
+      {% else %}
       <img src="/static/img/hero.png" alt="Il Ripassone!" class="h-96 w-auto"
            style="filter: drop-shadow(0 10px 20px rgba(0,0,0,0.20)) drop-shadow(0 3px 6px rgba(0,0,0,0.10));"/>
+      {% endif %}
     </div>
 
     <!-- Countdown -->

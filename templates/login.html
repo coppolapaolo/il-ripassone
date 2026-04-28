@@ -2,9 +2,13 @@
 {% block title %}Login admin · Il Ripassone{% endblock %}
 {% block body %}
 <div class="min-h-screen flex flex-col items-center justify-center p-6 gap-6">
+  {% if serious %}
+  <img src="/static/img/logo_serious.png" alt="Il Ripassone" class="logo-img h-20 w-auto"/>
+  {% else %}
   <div class="toon toon-yellow toon-sm px-5 py-2.5 -rotate-1">
     <h1 class="display-font text-3xl title-outlined leading-none">IL RIPASSONE!</h1>
   </div>
+  {% endif %}
 
   <form method="post" action="/login" class="toon p-6 max-w-sm w-full flex flex-col gap-3">
     <div class="display-font text-xl mb-1" style="color:var(--coral)">⚙ Login admin</div>

@@ -10,8 +10,12 @@
 <div class="min-h-screen flex flex-col p-6 gap-6">
 
   <header class="flex items-center justify-center gap-4">
+    {% if serious %}
+    <img src="/static/img/logo_serious.png" alt="Il Ripassone" class="logo-img h-24 w-auto"/>
+    {% else %}
     <img src="/static/img/hero.png" alt="Il Ripassone!" class="h-32 w-auto"
          style="filter: drop-shadow(0 8px 16px rgba(0,0,0,0.18)) drop-shadow(0 2px 4px rgba(0,0,0,0.10));"/>
+    {% endif %}
   </header>
 
   <div class="ribbon-bar"></div>

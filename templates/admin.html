@@ -60,9 +60,13 @@
   <!-- HEADER -->
   <header class="grid items-center gap-4" style="grid-template-columns: auto 1fr auto;">
     <div class="flex items-center gap-3">
+      {% if serious %}
+      <img src="/static/img/logo_serious.png" alt="Il Ripassone" class="logo-img h-12 w-auto"/>
+      {% else %}
       <div class="toon toon-sm toon-yellow px-4 py-2 -rotate-1">
         <h1 class="display-font text-2xl title-outlined leading-none">IL RIPASSONE!</h1>
       </div>
+      {% endif %}
       <span class="display-font text-sm uppercase" style="color:var(--coral)">⚙ Admin</span>
     </div>
     <div class="flex items-center gap-2 ml-auto">
