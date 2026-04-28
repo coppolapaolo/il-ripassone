@@ -326,6 +326,16 @@ function ripassoneClient(role) {
       if (p.bet) this.bet = p.bet;
       if (p.target) this.target = p.target;
     },
+    proposersForTarget(targetId) {
+      return this.memberProposalsList().filter(p => p.target === targetId).map(p => p.player).filter(Boolean);
+    },
+    proposersForQuestion(qid) {
+      return this.memberProposalsList().filter(p => p.question_id === qid).map(p => p.player).filter(Boolean);
+    },
+    proposersBetSummary() {
+      // ritorna [{first_name, bet}] solo dei membri che hanno proposto un bet
+      return this.memberProposalsList().filter(p => p.bet != null).map(p => ({ first_name: p.player?.first_name || '?', bet: p.bet }));
+    },
 
     /* === risposta / voto (TURN_QUESTION) === */
     canAnswer() {

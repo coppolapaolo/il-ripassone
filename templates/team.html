@@ -76,10 +76,26 @@
 
   /* target pill */
   .target-pill {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
     background: #fff; border: 2.5px solid var(--navy); border-radius: 14px;
     padding: 10px 12px; box-shadow: 3px 3px 0 var(--navy);
     transition: all 0.12s; width: 100%; min-height: 56px; text-align: left;
+  }
+  /* chip che mostra chi ha proposto un'opzione (target/domanda) */
+  .prop-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 1px 7px; border-radius: 99px;
+    font-size: 10px; font-weight: 600;
+    background: var(--coral); color: #fff;
+    border: 1.5px solid var(--navy);
+    box-shadow: 1.5px 1.5px 0 var(--navy);
+  }
+  .prop-row {
+    width: 100%;
+    border-top: 1.5px dashed currentColor;
+    padding-top: 5px; margin-top: 2px;
+    opacity: 0.92;
+    display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
   }
   .target-pill:active { transform: translate(1px,1px); box-shadow: 2px 2px 0 var(--navy); }
   .target-pill.on { color: #fff; }
@@ -523,7 +539,8 @@
         <div class="flex flex-col gap-2">
           <template x-for="q in filteredQuestions()" :key="q.id">
             <button type="button" @click="selectedQuestionId = q.id"
-                    class="toon-sm toon p-3 text-left transition-all">
+                    class="toon-sm toon p-3 text-left transition-all"
+                    :style="proposersForQuestion(q.id).length ? 'border-color:var(--coral); box-shadow: 3px 3px 0 var(--coral);' : ''">
               <div class="flex items-start justify-between gap-2 mb-1.5">
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="mono text-[11px] px-1.5 py-0.5 rounded toon toon-sm" style="background:#fff;" x-text="q.lecture"></span>
@@ -536,6 +553,12 @@
                 </div>
               </div>
               <div class="text-[14px] font-medium leading-snug" x-text="q.text"></div>
+              <div class="prop-row" x-show="proposersForQuestion(q.id).length" style="color:var(--coral); border-color:var(--coral);">
+                <span class="text-[10px] uppercase" style="color:var(--coral); opacity:0.9;">proposta da:</span>
+                <template x-for="p in proposersForQuestion(q.id)" :key="p.id">
+                  <span class="prop-chip" x-text="p.first_name"></span>
+                </template>
+              </div>
             </button>
           </template>
           <template x-if="!filteredQuestions().length">
@@ -589,6 +612,12 @@
           <span>min <span x-text="state?.settings?.min_bet"></span></span>
           <span>max <span x-text="Math.min(state?.settings?.max_bet || 50, myTeam()?.score || 50)"></span></span>
         </div>
+        <div class="prop-row mt-2" x-show="proposersBetSummary().length" style="color:var(--coral); border-color:var(--coral);">
+          <span class="text-[10px] uppercase" style="color:var(--coral); opacity:0.9;">proposte:</span>
+          <template x-for="(prop, idx) in proposersBetSummary()" :key="idx">
+            <span class="prop-chip"><span x-text="prop.first_name"></span>: <span x-text="prop.bet"></span> pt</span>
+          </template>
+        </div>
       </div>
 
       <div>
@@ -600,6 +629,12 @@
             <span class="target-radio"></span>
             <span class="display-font text-base leading-none">⚡ APERTA A TUTTI</span>
             <span class="ml-auto text-[11px]" :class="target === 'open' && 'opacity-90'">primo blocca</span>
+            <div class="prop-row" x-show="proposersForTarget('open').length">
+              <span class="text-[10px] uppercase" style="opacity:0.85;">proposta da:</span>
+              <template x-for="p in proposersForTarget('open')" :key="p.id">
+                <span class="prop-chip" x-text="p.first_name"></span>
+              </template>
+            </div>
           </button>
           <template x-for="opp in opponents()" :key="opp.id">
             <button type="button" class="target-pill" :class="target === opp.id && 'on'"
@@ -611,6 +646,12 @@
                     x-text="opp.name"></span>
               <span class="ml-auto text-[11px]" :class="target === opp.id ? 'opacity-90' : ''"
                     :style="target === opp.id ? '' : 'color:var(--navy-soft)'" x-text="opp.score + ' pt'"></span>
+              <div class="prop-row" x-show="proposersForTarget(opp.id).length">
+                <span class="text-[10px] uppercase" style="opacity:0.85;">proposta da:</span>
+                <template x-for="p in proposersForTarget(opp.id)" :key="p.id">
+                  <span class="prop-chip" x-text="p.first_name"></span>
+                </template>
+              </div>
             </button>
           </template>
         </div>
