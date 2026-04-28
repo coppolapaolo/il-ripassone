@@ -358,12 +358,15 @@ async def admin_end_quiz() -> None:
         STATE.countdown_seconds_left = None
 
 
+_PRE_GAME_PHASES = (Phase.SETUP, Phase.LOBBY, Phase.CAPTAIN_ELECTION, Phase.PRE_GAME)
+
+
 async def admin_seed_demo_questions() -> None:
-    """Carica un piccolo pool di domande di test (per Tappa 3, finche
-    non c'e l'import Excel). Solo in SETUP/LOBBY."""
+    """Carica un piccolo pool di domande di test. Permesso in tutte le fasi
+    pre-sfida (setup, lobby, elezione, pre-game)."""
     async with _lock:
-        if _phase() not in (Phase.SETUP, Phase.LOBBY):
-            raise StateError("Le domande si caricano solo in SETUP/LOBBY")
+        if _phase() not in _PRE_GAME_PHASES:
+            raise StateError("Le domande si caricano solo prima dell'avvio sfida")
         demo = _DEMO_QUESTIONS
         for q in demo:
             STATE.questions_pool[q.id] = q
@@ -372,10 +375,10 @@ async def admin_seed_demo_questions() -> None:
 async def admin_add_questions(questions: list[Question]) -> int:
     """Aggiunge un blocco di domande al pool. Riassegna gli id partendo
     da max(pool_ids)+1 per evitare collisioni con pool gia caricati.
-    Ritorna il numero di domande aggiunte."""
+    Ritorna il numero di domande aggiunte. Permesso in tutte le fasi pre-sfida."""
     async with _lock:
-        if _phase() not in (Phase.SETUP, Phase.LOBBY):
-            raise StateError("Le domande si caricano solo in SETUP/LOBBY")
+        if _phase() not in _PRE_GAME_PHASES:
+            raise StateError("Le domande si caricano solo prima dell'avvio sfida")
         next_id = (max(STATE.questions_pool.keys()) + 1) if STATE.questions_pool else 1
         added = 0
         for q in questions:

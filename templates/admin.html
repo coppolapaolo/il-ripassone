@@ -237,7 +237,12 @@
       <button class="btn-action" x-show="state?.phase === 'pre_game'"
               @click="if(confirm('Riaprire le elezioni? I capitani correnti verranno azzerati.')) send('admin/back_to_election')">↩ Torna alle elezioni</button>
       <button class="btn-toon coral" x-show="state?.phase === 'pre_game'"
-              @click="send('admin/start_quiz')">▶ Avvia sfida</button>
+              :disabled="!Object.keys(state?.questions_pool || {}).length"
+              :title="!Object.keys(state?.questions_pool || {}).length ? 'Carica prima un pool di domande dalla tab Setup' : ''"
+              @click="send('admin/start_quiz')">
+        ▶ Avvia sfida
+        <span x-show="!Object.keys(state?.questions_pool || {}).length" class="text-[10px] block leading-tight">⚠ pool vuoto</span>
+      </button>
     </section>
 
     <!-- Dashboard squadre/elezioni -->
