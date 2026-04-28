@@ -59,7 +59,7 @@ Stampa in console:
 6. Admin clicca *Chiudi elezioni e annuncia capitani* → fase **PRE_GAME**
 7. **PRE_GAME**: capitani annunciati su tutti i client. Solo il capitano può rinominare la sua squadra. Il cambio squadra è bloccato. Edit nome/cognome ancora possibile. L'admin può tornare alle elezioni se serve.
 8. Admin clicca *Avvia sfida* (sorteggia ordine, apre primo turno)
-9. Loop: durante TURN_CHOICE i membri possono filtrare il pool e **proporre** domanda+puntata+bersaglio. Le proposte appaiono come chip colorati sotto ciascuna opzione (target/domanda) e nel riepilogo sotto lo slider della puntata; il capitano può adottarne una con un tap o decidere autonomamente. Countdown → risposta → reveal → *Next turn*. Tra un turno e l'altro l'admin può modificare i tempi (sezione *⏱ Tempi prossimo turno* nella tab Partita): il nuovo `seconds` e i `time_factors` valgono dal turno seguente. Un *round* è un giro completo: con N squadre e R round si giocano N×R sfide totali.
+9. Loop: durante TURN_CHOICE i membri filtrano il pool e **propongono in tempo reale** — appena toccano una domanda, una puntata o un bersaglio, la proposta è già visibile al capitano (chip colorati sotto ogni opzione, nessun bottone "Proponi" da premere). Il capitano può adottarne una con un tap o decidere autonomamente. Countdown → risposta → reveal → *Next turn*. Tra un turno e l'altro l'admin può modificare i tempi (sezione *⏱ Tempi prossimo turno* nella tab Partita): il nuovo `seconds` e i `time_factors` valgono dal turno seguente. Un *round* è un giro completo: con N squadre **attive** (score>0) e R round si giocano fino a N×R sfide. Una squadra che va a zero (o sotto) viene **saltata** quando tocca a lei porre, ma resta in classifica e può rispondere alle domande aperte; se torna sopra zero, riprende a porre nei round successivi.
 10. La tab **Lobby** di admin resta consultabile in ogni fase: durante la sfida mostra le squadre con capitano + membri, e lo storico dei voti dell'elezione (read-only).
 11. A fine sfida: classifica finale su `/display` e tab Partita di admin
 
@@ -136,6 +136,14 @@ In `src/ripassone/config.py`, modifica `ADMIN_PASSWORD_PLAIN`. L'hash bcrypt
 viene rigenerato a ogni avvio.
 
 ---
+
+## Resilienza connessioni
+
+- **Reconnect automatico WebSocket**: se la WS cade (telefono in standby, switch tra app, microblip wifi), il client la riapre con backoff esponenziale 1/2/4/8s.
+- **Auto-rejoin**: appena la WS si riconnette, se `me` è in localStorage il client manda automaticamente `team/rejoin` e lo studente ritrova lo stato senza fare nulla.
+- **Rejoin manuale**: se uno studente cambia dispositivo o pulisce il browser, dalla pagina `/team` (durante una sfida in corso) può rientrare con solo nome+cognome.
+- **Heartbeat** ogni 10s: il server libera entro ~25s le sessioni "appese" (browser killato senza FIN/RST), così la riconnessione non resta bloccata dall'anti-scherzo.
+- **Anti-scherzo**: se uno studente prova un rejoin a nome di un compagno la cui sessione è ancora viva, il server rifiuta. Il messaggio è esplicito: "se sei tu, chiudi l'altra finestra; altrimenti riprova fra qualche secondo".
 
 ## Limiti noti
 
