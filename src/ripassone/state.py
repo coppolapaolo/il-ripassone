@@ -535,8 +535,8 @@ async def team_join(first_name: str, last_name: str, team_name: str) -> tuple[Pl
         )
         STATE.players[player.id] = player
 
-        if team.captain_id is None:
-            team.captain_id = player.id
+        # Niente capitano automatico: il capitano viene eletto in
+        # CAPTAIN_ELECTION via Majority Judgment.
 
         return player, False
 
