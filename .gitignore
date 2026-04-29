@@ -43,3 +43,6 @@ domande-*.txt
 report_*.md
 *.tmp
 .~lock.*
+
+# Launcher personale (contiene password admin in chiaro)
+/ripassone
