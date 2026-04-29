@@ -10,10 +10,10 @@ sincronizzate via WebSocket: **/admin** (controllo del docente), **/team**
 (mobile per studenti), **/display** (proiettore in aula).
 
 Nato per il corso DIPA — *Digitalizzazione delle imprese e della Pubblica
-Amministrazione* — del Master in Diritto per l'Innovazione dell'Università di
-Udine, ma volutamente generalista: la struttura "domande di ripasso → squadre
-→ deliberazione di squadra → puntate" funziona indipendentemente dalla
-materia.
+Amministrazione* — insegnamento della Laurea Magistrale in *Diritto per
+l'Innovazione di Imprese e Pubbliche Amministrazioni* (LM-63), Università di
+Udine. Volutamente generalista: la struttura "domande di ripasso → squadre →
+deliberazione di squadra → puntate" funziona indipendentemente dalla materia.
 
 ---
 
