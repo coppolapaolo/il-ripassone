@@ -34,3 +34,12 @@ Icon?
 # File caricati dall'admin in esecuzione (non committare)
 uploads/
 data/runtime/
+
+# Pool domande del corso (non distribuibili pubblicamente).
+# Mantenere solo domande_esempio.xlsx + DIPA_L19_compito_template.xlsx.
+prova_domande_1.xlsx
+domande-*.xlsx
+domande-*.txt
+report_*.md
+*.tmp
+.~lock.*

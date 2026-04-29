@@ -7,6 +7,7 @@ proprieta voluta per un servizio "single session" da laptop in classe).
 """
 from __future__ import annotations
 
+import os
 import secrets
 from pathlib import Path
 
@@ -20,8 +21,10 @@ HOST = "0.0.0.0"
 PORT = 8000
 DEV_RELOAD = True
 
-# Password admin (cambiare qui se serve)
-ADMIN_PASSWORD_PLAIN = "pippo$4"
+# Password admin: legge da env-var RIPASSONE_ADMIN_PASSWORD se definita,
+# altrimenti usa il default per uso "fuori dalla scatola".
+# In produzione: esporta RIPASSONE_ADMIN_PASSWORD prima di avviare.
+ADMIN_PASSWORD_PLAIN = os.environ.get("RIPASSONE_ADMIN_PASSWORD", "ripassone")
 ADMIN_PASSWORD_HASH = bcrypt.hashpw(ADMIN_PASSWORD_PLAIN.encode(), bcrypt.gensalt()).decode()
 
 # Token di sessione: rigenerato ad ogni boot.

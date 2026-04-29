@@ -1,12 +1,19 @@
 # Il Ripassone
 
-Sfida interattiva a squadre per il corso DIPA, Master Diritto per
-l'Innovazione, Università di Udine.
+Sfida interattiva a squadre per il ripasso in aula. Pensato per qualsiasi
+corso e qualsiasi livello scolastico — dalle scuole primarie all'università.
 
 Le squadre di studenti si sfidano a colpi di domande a risposta multipla
-caricate dagli studenti stessi (template Excel `DIPA_L19_compito_template.xlsx`).
-Tre viste sincronizzate via WebSocket: **/admin** (controllo del prof),
-**/team** (mobile per studenti), **/display** (proiettore in aula).
+caricate da un foglio Excel (può essere preparato dal docente, dagli studenti
+stessi come compito, o pescato da qualunque banca-domande). Tre viste
+sincronizzate via WebSocket: **/admin** (controllo del docente), **/team**
+(mobile per studenti), **/display** (proiettore in aula).
+
+Nato per il corso DIPA — *Digitalizzazione delle imprese e della Pubblica
+Amministrazione* — del Master in Diritto per l'Innovazione dell'Università di
+Udine, ma volutamente generalista: la struttura "domande di ripasso → squadre
+→ deliberazione di squadra → puntate" funziona indipendentemente dalla
+materia.
 
 ---
 
@@ -15,10 +22,20 @@ Tre viste sincronizzate via WebSocket: **/admin** (controllo del prof),
 ### 0. Prerequisiti (una volta sola)
 
 ```bash
-brew install ngrok      # tunnel pubblico per studenti su rete cellulare
+# Python 3.14 + uv (gestore di pacchetti Python)
+brew install uv
+
+# Solo se servirà esporre il server agli studenti su rete cellulare:
+brew install ngrok
 ngrok config add-authtoken <TOKEN>   # account gratuito su ngrok.com
-# uv (gestore Python) gia installato
 ```
+
+**Password admin** (opzionale ma consigliato): aggiungi al tuo `.zshrc` o
+`.bashrc` la variabile d'ambiente
+```bash
+export RIPASSONE_ADMIN_PASSWORD="la-tua-password"
+```
+Senza variabile, la password di default è `ripassone`.
 
 ### 1. Avvio
 Dalla cartella `quizzone/`:
@@ -65,15 +82,26 @@ Stampa in console:
 
 ### Test con dati precompilati
 
-Per provare il sistema senza file degli studenti, sono disponibili due fonti
-di domande:
+Per provare il sistema senza file proprio:
 
-- **`prova_domande_1.xlsx`** (in cartella): 142 domande reali estratte dal pool
-  ufficiale del corso (firme/eIDAS, CAD, codifica, AI/ML…). Distribuzione:
-  L01:11 · L02:13 · L04:35 · L05:54 · L06:11 · L11:18; difficoltà 65/63/14.
-  Caricare via tab Setup → *Carica file*.
-- **Seed demo**: bottone *Seed 6 demo* nel pannello upload — 6 domande hardcoded
-  per test rapidissimi senza file.
+- **`domande_esempio.xlsx`** (in cartella): 2 domande generiche (geografia,
+  matematica) per smoke-test dell'import. Caricare via tab Setup → *Carica file*.
+- **Seed demo**: bottone *Seed 6 demo* nel pannello upload — 6 domande
+  hardcoded per test rapidissimi senza file.
+
+### Preparare il proprio pool di domande
+
+Usa **`DIPA_L19_compito_template.xlsx`** come traccia: foglio *Domande*, riga 7
+con gli header, dati dalla riga 8 in poi. Colonne (l'ordine conta):
+
+| # | Lezione | Argomento | Domanda | Opzione A | Opzione B | Opzione C | Opzione D | Risposta corretta | Difficoltà | Spiegazione | Fonte |
+
+Note pratiche:
+- *Lezione*: stringa libera (es. `L01`, `Cap. 3`, `Unità 2`). Diventa un filtro nella UI.
+- *Risposta corretta*: una lettera fra A, B, C, D.
+- *Difficoltà*: 1 (facile), 2 (media), 3 (tosta) — modula il countdown.
+- Le opzioni vuote (es. solo A/B/C) vengono ignorate: puoi avere domande con 2-4 opzioni.
+- *Spiegazione* e *Fonte* sono opzionali, mostrate al reveal.
 
 ---
 
@@ -110,10 +138,12 @@ uv run main.py --public  # con ngrok
 ### Layout
 
 ```
-quizzone/
-├── main.py                 # entry point + ngrok wrapper
+il-ripassone/
+├── main.py                          # entry point + ngrok wrapper
 ├── pyproject.toml
-├── DIPA_L19_compito_template.xlsx  # template per gli studenti
+├── domande_esempio.xlsx             # 2 domande di esempio per smoke-test
+├── DIPA_L19_compito_template.xlsx   # template (vuoto) compatibile con il parser
+├── LICENSE                          # MIT
 ├── src/ripassone/
 │   ├── app.py              # FastAPI route
 │   ├── auth.py             # password bcrypt + cookie
@@ -132,8 +162,13 @@ quizzone/
 
 ### Cambiare la password admin
 
-In `src/ripassone/config.py`, modifica `ADMIN_PASSWORD_PLAIN`. L'hash bcrypt
-viene rigenerato a ogni avvio.
+```bash
+export RIPASSONE_ADMIN_PASSWORD="la-tua-password"
+uv run main.py
+```
+
+Senza variabile d'ambiente, la password è `ripassone`. L'hash bcrypt viene
+rigenerato a ogni avvio: la password in chiaro non viene mai persistita.
 
 ---
 
@@ -151,3 +186,31 @@ viene rigenerato a ogni avvio.
 - Riavvio del server = perdita partita corrente (non c'è persistenza)
 - Cookie admin condiviso tra tab dello stesso browser (atteso: prof = un'identità)
 - Audio gate solo su `/display` (gli studenti non hanno bisogno di audio)
+
+---
+
+## Adottare in altri corsi
+
+Il codice è scritto per essere il più possibile *content-agnostic*. Per usarlo
+in un corso diverso da DIPA basta:
+
+1. Preparare un `.xlsx` con le tue domande seguendo lo schema di
+   `DIPA_L19_compito_template.xlsx` (vedi sezione *Preparare il proprio pool*).
+2. (Opzionale) Sostituire il logo `static/img/hero.png` con quello del tuo
+   corso, o usare `--serious` per il logo istituzionale generico.
+3. (Opzionale) Personalizzare i colori squadra in
+   `src/ripassone/state.py` (`TEAM_COLORS_POP` / `TEAM_COLORS_SERIOUS`).
+
+Funziona già a tutti i livelli scolastici — dalle elementari (domande di
+storia, geografia, tabelline) all'università (esami orali simulati, ripassi
+pre-prova). Il modello a squadre con deliberazione interna scala bene da 6 a
+40 studenti.
+
+Se lo adatti per un tuo corso, segnalalo aprendo una issue / discussion: mi
+piacerebbe linkare gli adattamenti.
+
+## Licenza
+
+[MIT](LICENSE) — usa, modifica, ridistribuisci liberamente, anche per scopi
+commerciali. Niente clausole copyleft: se forki per il tuo istituto, sei
+libero di tenere le modifiche private o open, come preferisci.
