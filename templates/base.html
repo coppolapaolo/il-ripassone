@@ -119,7 +119,13 @@ function ripassoneClient(role) {
     target: null,
     filterQ: '', filterLectures: [], filterDiff: [],
     myChoice: null,
-    answerSubmitted: false,
+    /* answerSubmitted e' derivato dal server: true se la mia risposta e' gia
+       in current_round.answers. Cosi sopravvive a refresh/riconnessione. */
+    get answerSubmitted() {
+      if (!this.me) return false;
+      const answers = this.currentRound()?.answers || [];
+      return answers.some(a => a.captain_id === this.me.id);
+    },
 
     /* stato locale per la vista admin (tab corrente, settings editabili) */
     tab: 'setup',
@@ -213,7 +219,6 @@ function ripassoneClient(role) {
       }
       if (to === 'turn_question') {
         this.myChoice = null;
-        this.answerSubmitted = false;
       }
       // suoni
       if (this.muted) return;
@@ -392,13 +397,16 @@ function ripassoneClient(role) {
       return this.memberProposalsList().filter(p => p.bet != null).map(p => ({ first_name: p.player?.first_name || '?', bet: p.bet }));
     },
 
-    /* === risposta / voto (TURN_QUESTION) === */
+    /* === risposta / voto (TURN_QUESTION) ===
+       Tutti i capitani avversari possono rispondere (anche se la domanda
+       e indirizzata a un'altra squadra: rispondono "per ripasso"); solo la
+       squadra titolata muove i punti. I non-capitani avversari votano
+       per suggerire al proprio capitano. */
     canAnswer() {
       if (!this.isCaptainOf(this.me?.team_id)) return false;
       const r = this.currentRound();
       if (!r) return false;
       if (r.asking_team_id === this.me.team_id) return false;
-      if (r.target !== 'open' && r.target !== this.me.team_id) return false;
       return true;
     },
     canVote() {
@@ -406,10 +414,17 @@ function ripassoneClient(role) {
       const r = this.currentRound();
       if (!r) return false;
       if (r.asking_team_id === this.me.team_id) return false;
-      if (r.target !== 'open' && r.target !== this.me.team_id) return false;
       return true;
     },
     canAnswerOrVote() { return this.canAnswer() || this.canVote(); },
+    /* counter anonimo per la UI durante TURN_QUESTION */
+    answeredCount() { return (this.currentRound()?.answers || []).length; },
+    eligibleCount() {
+      const r = this.currentRound();
+      if (!r) return 0;
+      return Object.values(this.state?.teams || {})
+        .filter(t => t.id !== r.asking_team_id && t.captain_id).length;
+    },
     onPick(letter) {
       this.myChoice = letter;
       if (this.canVote()) this.send('team/vote', { player_id: this.me.id, option: letter });
@@ -417,7 +432,7 @@ function ripassoneClient(role) {
     submitAnswer() {
       if (!this.myChoice || this.answerSubmitted) return;
       this.send('captain/answer', { captain_id: this.me.id, option: this.myChoice });
-      this.answerSubmitted = true;
+      // niente flag locale: answerSubmitted e' un getter sul server-state
     },
     votesFor(letter) {
       const v = this.currentRound()?.member_votes || {};

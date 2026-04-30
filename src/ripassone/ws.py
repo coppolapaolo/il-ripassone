@@ -18,7 +18,7 @@ from typing import Awaitable, Callable
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from ripassone import auth, state
-from ripassone.models import Settings
+from ripassone.models import Phase, Settings
 
 router = APIRouter()
 
@@ -57,12 +57,91 @@ manager = ConnectionManager()
 _player_ws: dict[str, WebSocket] = {}
 
 
+def _redact_round_for_viewer(round_dict: dict, phase: str, viewer_player_id: str | None) -> None:
+    """Mutua un dict-Round per nascondere informazioni che leakerebbero il gioco:
+      - durante TURN_QUESTION: nasconde le lettere delle risposte di tutti
+        (tranne quella del viewer), e azzera answer_letter/answer_team_id/is_correct
+        (la prima risposta scorante sull'open trapelerebbe il pensiero del primo).
+      - SEMPRE: filtra member_votes mostrandoli solo al capitano della squadra
+        del votante; gli altri (incluso admin/display) ricevono {}.
+        Eccezione: il votante stesso vede il proprio voto."""
+    viewer_team_id: str | None = None
+    viewer_is_captain = False
+    if viewer_player_id is not None:
+        viewer = state.STATE.players.get(viewer_player_id)
+        if viewer is not None:
+            viewer_team_id = viewer.team_id
+            if viewer_team_id is not None:
+                team = state.STATE.teams.get(viewer_team_id)
+                if team is not None and team.captain_id == viewer_player_id:
+                    viewer_is_captain = True
+
+    # member_votes: per-viewer
+    raw_votes = round_dict.get("member_votes") or {}
+    if viewer_is_captain and viewer_team_id is not None:
+        # capitano: solo voti dei propri membri
+        filtered = {
+            pid: letter for pid, letter in raw_votes.items()
+            if (p := state.STATE.players.get(pid)) is not None and p.team_id == viewer_team_id
+        }
+    elif viewer_player_id is not None and viewer_player_id in raw_votes:
+        # membro non-capitano: solo il proprio voto
+        filtered = {viewer_player_id: raw_votes[viewer_player_id]}
+    else:
+        filtered = {}
+    round_dict["member_votes"] = filtered
+
+    # answers + answer_* nascosti durante TURN_QUESTION
+    if phase == Phase.TURN_QUESTION.value:
+        redacted: list[dict] = []
+        for a in round_dict.get("answers") or []:
+            r = {"team_id": a["team_id"], "captain_id": a["captain_id"], "order": a["order"]}
+            if viewer_player_id is not None and a["captain_id"] == viewer_player_id:
+                # il viewer-capitano vede la propria letter (cortesia post-refresh)
+                r["letter"] = a["letter"]
+                r["is_correct"] = a["is_correct"]
+                r["scored"] = a["scored"]
+            redacted.append(r)
+        round_dict["answers"] = redacted
+        round_dict["answer_letter"] = None
+        round_dict["answer_team_id"] = None
+        round_dict["is_correct"] = None
+
+
+def state_snapshot_for(viewer_player_id: str | None) -> dict:
+    """Snapshot filtrato per il viewer indicato (None = nessun privilegio)."""
+    data = state.STATE.model_dump(mode="json")
+    rounds = data.get("rounds") or []
+    if rounds:
+        # filtriamo solo il round corrente: i precedenti sono storia,
+        # gia rivelati, niente da nascondere.
+        _redact_round_for_viewer(rounds[-1], data.get("phase", ""), viewer_player_id)
+    return {"type": "state/full", "data": data}
+
+
+# Backward-compat: snapshot pubblico (nessun viewer, filtro massimo).
 def state_snapshot() -> dict:
-    return {"type": "state/full", "data": state.STATE.model_dump(mode="json")}
+    return state_snapshot_for(None)
 
 
 async def broadcast_state() -> None:
-    await manager.broadcast(state_snapshot())
+    """Invia state/full a ogni connessione, costruito ad hoc per il viewer
+    (player associato a quella ws). Connessioni senza player associato
+    ricevono lo snapshot filtrato pubblico (display, admin pre-login client-side)."""
+    # ws -> player_id, calcolato al volo
+    ws_to_pid: dict[WebSocket, str] = {ws_: pid for pid, ws_ in _player_ws.items()}
+    dead: list[WebSocket] = []
+    # snapshot pubblico riusato per ws senza player associato (display ecc.)
+    public_msg = state_snapshot_for(None)
+    for ws in manager.active:
+        pid = ws_to_pid.get(ws)
+        msg = state_snapshot_for(pid) if pid is not None else public_msg
+        try:
+            await ws.send_json(msg)
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        manager.disconnect(ws)
 
 
 async def kick_old_session(player_id: str, current_ws: WebSocket | None = None) -> None:
@@ -284,8 +363,11 @@ async def _h_captain_choose_question(ws: WebSocket, data: dict) -> None:
 
 async def _h_captain_answer(ws: WebSocket, data: dict) -> None:
     await state.captain_answer(captain_id=data["captain_id"], option=data["option"])
-    # se eravamo in countdown, fermiamolo
-    stop_countdown()
+    # Il countdown va fermato solo se l'early reveal e scattato (tutti i
+    # capitani eleggibili online hanno risposto). Se siamo ancora in
+    # TURN_QUESTION, gli altri capitani devono poter rispondere fino al timer.
+    if state.STATE.phase == Phase.TURN_REVEAL.value:
+        stop_countdown()
 
 
 HANDLERS: dict[str, Callable[[WebSocket, dict], Awaitable[None]]] = {

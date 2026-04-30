@@ -80,6 +80,19 @@ class Question(BaseModel):
     author: str | None = None  # studente che ha proposto la domanda
 
 
+class Answer(BaseModel):
+    """Risposta di un capitano nel turno corrente.
+    Una squadra puo avere al piu una risposta per round (quella del capitano).
+    `scored=True` solo per la prima risposta che muove i punti: sull'open e
+    la prima in assoluto, sul target=X e la prima del capitano di X."""
+    team_id: str
+    captain_id: str
+    letter: Letter
+    is_correct: bool
+    order: int  # 1 = primo, 2 = secondo, ...
+    scored: bool
+
+
 class Round(BaseModel):
     """Un singolo turno di gioco. Si crea entrando in TURN_CHOICE
     e si chiude entrando in TURN_REVEAL (o nel passaggio successivo)."""
@@ -89,11 +102,15 @@ class Round(BaseModel):
     bet: int | None = None
     target: str | None = None  # "open" oppure team_id
     seconds_total: int | None = None  # countdown totale calcolato dalla difficolta
+    # answer_letter / answer_team_id / is_correct: la risposta che ha SCORATO
+    # (per scoring e UI legacy). La storia completa sta in `answers`.
     answer_letter: Letter | None = None
-    answer_team_id: str | None = None  # squadra che ha risposto (per buzzer/aperta)
+    answer_team_id: str | None = None
     is_correct: bool | None = None
     timed_out: bool = False
     points_delta: dict[str, int] = Field(default_factory=dict)  # team_id -> +/- pt
+    # tutte le risposte dei capitani avversari, in ordine di arrivo
+    answers: list[Answer] = Field(default_factory=list)
     # voti dei membri non-capitani: player_id -> letter
     member_votes: dict[str, Letter] = Field(default_factory=dict)
     # Proposte dei membri della squadra che pone, durante TURN_CHOICE.

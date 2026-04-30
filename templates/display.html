@@ -234,6 +234,13 @@
           <span class="display-font text-xs uppercase" style="color:var(--navy-soft)">In palio</span>
           <span class="toon-sm toon px-3 py-1 toon-yellow display-font text-2xl leading-none" x-text="currentRound()?.bet + ' pt'"></span>
         </div>
+        <template x-if="state?.phase === 'turn_question'">
+          <div class="flex items-baseline gap-2">
+            <span class="w-1 h-7 rounded-full" style="background: var(--navy)"></span>
+            <span class="display-font text-xs uppercase ml-2" style="color:var(--navy-soft)">Risposte</span>
+            <span class="toon-sm toon px-3 py-1 display-font text-2xl leading-none" x-text="answeredCount() + '/' + eligibleCount()"></span>
+          </div>
+        </template>
         <div class="ml-auto flex items-center gap-3">
           <span class="mono text-xs px-2.5 py-1 rounded-md toon-sm toon" style="background:#fff;" x-text="currentQuestion()?.lecture + ' · ' + (currentQuestion()?.topic || '')"></span>
           <span class="text-base">
@@ -256,14 +263,28 @@
       <!-- Opzioni 2x2 -->
       <section class="grid grid-cols-2 gap-3 px-1">
         <template x-for="opt in currentQuestion()?.options || []" :key="opt.letter">
-          <div class="toon toon-sm flex items-center gap-4 px-5 py-3.5"
+          <div class="toon toon-sm flex flex-col gap-2 px-5 py-3.5"
                :class="state?.phase === 'turn_reveal' && (opt.letter === currentQuestion()?.correct ? 'reveal-correct' : 'reveal-wrong')">
-            <div class="opt-letter opt-letter-display" x-text="opt.letter"></div>
-            <div class="text-xl font-medium leading-snug flex-1" x-text="opt.text"></div>
-            <template x-if="state?.phase === 'turn_reveal' && opt.letter === currentQuestion()?.correct">
-              <span class="display-font text-sm flex items-center gap-1.5 px-2.5 py-1 toon toon-sm flex-shrink-0" style="background:var(--success); color:#fff; box-shadow: 3px 3px 0 var(--navy);">
-                ✓ OK!
-              </span>
+            <div class="flex items-center gap-4">
+              <div class="opt-letter opt-letter-display" x-text="opt.letter"></div>
+              <div class="text-xl font-medium leading-snug flex-1" x-text="opt.text"></div>
+              <template x-if="state?.phase === 'turn_reveal' && opt.letter === currentQuestion()?.correct">
+                <span class="display-font text-sm flex items-center gap-1.5 px-2.5 py-1 toon toon-sm flex-shrink-0" style="background:var(--success); color:#fff; box-shadow: 3px 3px 0 var(--navy);">
+                  ✓ OK!
+                </span>
+              </template>
+            </div>
+            <!-- Squadre che hanno scelto questa opzione, in ordine di arrivo -->
+            <template x-if="state?.phase === 'turn_reveal'">
+              <div class="flex flex-wrap gap-2 pl-[3.5rem]">
+                <template x-for="a in (currentRound()?.answers || []).filter(a => a.letter === opt.letter)" :key="a.captain_id">
+                  <span class="toon-sm toon px-2 py-0.5 display-font text-sm flex items-center gap-1.5"
+                        :style="`background:#fff; ${a.scored ? 'box-shadow: 3px 3px 0 var(--navy);' : 'opacity:0.7;'}`">
+                    <span style="color:var(--navy-soft); font-size:11px;" x-text="a.order + 'ª'"></span>
+                    <span :style="`color:${state?.teams?.[a.team_id]?.color}; -webkit-text-stroke: 0.3px var(--navy);`" x-text="state?.teams?.[a.team_id]?.name"></span>
+                  </span>
+                </template>
+              </div>
             </template>
           </div>
         </template>

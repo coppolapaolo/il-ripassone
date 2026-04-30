@@ -18,6 +18,7 @@ import time
 import uuid
 
 from ripassone.models import (
+    Answer,
     GameState,
     Letter,
     Phase,
@@ -142,6 +143,25 @@ def _team_of_captain(captain_id: str) -> Team | None:
         if t.captain_id == captain_id:
             return t
     return None
+
+
+def _eligible_captain_ids_online(asking_team_id: str) -> list[str]:
+    """Capitani delle squadre avversarie attualmente online.
+    Usato per decidere quando si chiude la fase TURN_QUESTION in anticipo:
+    appena tutti i capitani eleggibili (online) hanno risposto, reveal.
+    Esclude il capitano della squadra che pone (non puo rispondere).
+    Esclude i capitani offline (altrimenti il timer non si chiuderebbe mai)."""
+    out: list[str] = []
+    for t in STATE.teams.values():
+        if t.id == asking_team_id:
+            continue
+        if t.captain_id is None:
+            continue
+        captain = STATE.players.get(t.captain_id)
+        if captain is None or not captain.online:
+            continue
+        out.append(t.captain_id)
+    return out
 
 
 def _find_player_in_team(first: str, last: str, team_id: str) -> Player | None:
@@ -858,14 +878,18 @@ async def captain_choose_question(captain_id: str, question_id: int, bet: int, t
 
 
 async def captain_answer(captain_id: str, option: Letter) -> None:
-    """TURN_QUESTION -> TURN_REVEAL: il primo capitano che risponde blocca.
-    Applica scoring corretto in base a target e correttezza."""
+    """Registra la risposta di un capitano avversario.
+    Tutti i capitani avversari (anche quelli non-target) possono rispondere
+    per ripasso; le risposte vengono raccolte fino a fine timer o finche
+    tutti hanno risposto. Lo scoring si applica una sola volta, alla
+    PRIMA risposta della squadra titolata: sull'open la prima in assoluto,
+    sul target=X la prima del capitano di X."""
     async with _lock:
         if _phase() != Phase.TURN_QUESTION:
             raise StateError("Risposta solo in TURN_QUESTION")
         round_ = STATE.current_round
-        if round_ is None or round_.answer_letter is not None:
-            raise StateError("Round non valido o gia risposto")
+        if round_ is None:
+            raise StateError("Round non valido")
 
         team = _team_of_captain(captain_id)
         if team is None:
@@ -873,20 +897,42 @@ async def captain_answer(captain_id: str, option: Letter) -> None:
         if team.id == round_.asking_team_id:
             raise StateError("Non puoi rispondere a una domanda che ha posto la tua squadra")
 
-        # validazione target: se la domanda e indirizzata a una squadra specifica,
-        # solo quella puo rispondere
-        if round_.target != "open" and round_.target != team.id:
-            raise StateError("Questa domanda e indirizzata a un'altra squadra")
+        # ogni capitano puo rispondere una sola volta
+        if any(a.captain_id == captain_id for a in round_.answers):
+            raise StateError("Hai gia risposto a questa domanda")
 
         question = STATE.questions_pool[round_.question_id]
         is_correct = option == question.correct
-        round_.answer_letter = option
-        round_.answer_team_id = team.id
-        round_.is_correct = is_correct
-        STATE.countdown_seconds_left = None
 
-        _apply_scoring_for_answer(round_, team.id, is_correct)
-        transition(Phase.TURN_REVEAL)
+        # Lo scoring scatta solo per la prima risposta della squadra titolata.
+        # - target=="open" -> titolata = qualunque squadra, quindi la prima in assoluto
+        # - target==team_id -> titolata = solo quella squadra
+        scores = (round_.answer_letter is None) and (
+            round_.target == "open" or round_.target == team.id
+        )
+
+        order = len(round_.answers) + 1
+        round_.answers.append(Answer(
+            team_id=team.id,
+            captain_id=captain_id,
+            letter=option,
+            is_correct=is_correct,
+            order=order,
+            scored=scores,
+        ))
+
+        if scores:
+            round_.answer_letter = option
+            round_.answer_team_id = team.id
+            round_.is_correct = is_correct
+            _apply_scoring_for_answer(round_, team.id, is_correct)
+
+        # Early reveal: tutti i capitani eleggibili online hanno risposto.
+        eligible = set(_eligible_captain_ids_online(round_.asking_team_id))
+        answered = {a.captain_id for a in round_.answers}
+        if eligible and eligible.issubset(answered):
+            STATE.countdown_seconds_left = None
+            transition(Phase.TURN_REVEAL)
 
 
 # ============================================================
@@ -913,7 +959,12 @@ async def tick_countdown() -> str:
         if round_ is None:
             return "stopped"
         round_.timed_out = True
-        _apply_scoring_for_timeout(round_)
+        # Se nessuno ha ancora scorato, applica le penalita di timeout.
+        # Se invece qualcuno ha gia risposto e scorato (open: il primo;
+        # target=X: il capitano di X), lo scoring e gia avvenuto in
+        # captain_answer e non va riapplicato.
+        if round_.answer_letter is None:
+            _apply_scoring_for_timeout(round_)
         STATE.countdown_seconds_left = None
         transition(Phase.TURN_REVEAL)
         return "timeout"

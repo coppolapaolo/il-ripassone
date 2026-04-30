@@ -742,24 +742,26 @@
         <template x-if="currentRound()?.target === 'open'">
           <div>
             <div class="display-font text-base" style="color:var(--teal-deep); -webkit-text-stroke: 0.5px var(--navy);">APERTA A TUTTI ⚡</div>
-            <div class="text-[11px] mt-1" style="color:var(--navy-soft)">primo che risponde, blocca le altre</div>
+            <div class="text-[11px] mt-1" style="color:var(--navy-soft)">rispondete tutti, conta il primo</div>
           </div>
         </template>
         <template x-if="currentRound()?.target !== 'open' && currentRound()?.target === me?.team_id">
           <div>
             <div class="display-font text-base" style="color:var(--coral); -webkit-text-stroke: 0.5px var(--navy);">A TE!</div>
-            <div class="text-[11px] mt-1" style="color:var(--navy-soft)">domanda diretta alla tua squadra</div>
+            <div class="text-[11px] mt-1" style="color:var(--navy-soft)">i punti vanno a chi e indirizzato</div>
           </div>
         </template>
-        <template x-if="currentRound()?.target !== 'open' && currentRound()?.target !== me?.team_id">
+        <template x-if="currentRound()?.target !== 'open' && currentRound()?.target !== me?.team_id && currentRound()?.asking_team_id !== me?.team_id">
           <div>
-            <div class="display-font text-base" style="-webkit-text-stroke: 0.5px var(--navy); color:var(--navy-soft)">NON A TE</div>
-            <div class="text-[11px] mt-1" style="color:var(--navy-soft)">la domanda e per un'altra squadra</div>
+            <div class="display-font text-base" style="-webkit-text-stroke: 0.5px var(--navy); color:var(--navy-soft)">RIPASSO</div>
+            <div class="text-[11px] mt-1" style="color:var(--navy-soft)">rispondi anche tu, ma i punti vanno alla squadra indirizzata</div>
           </div>
         </template>
         <div class="flex items-center gap-2 mt-2">
           <span class="display-font text-[10px] uppercase" style="color:var(--navy-soft)">In palio</span>
           <span class="toon-sm toon px-2 py-0.5 toon-yellow display-font text-base leading-none" x-text="currentRound()?.bet + ' pt'"></span>
+          <span class="display-font text-[10px] uppercase ml-3" style="color:var(--navy-soft)">Risposte</span>
+          <span class="toon-sm toon px-2 py-0.5 display-font text-base leading-none" x-text="answeredCount() + '/' + eligibleCount()"></span>
         </div>
       </div>
     </div>
@@ -805,26 +807,54 @@
       </button>
     </div>
 
-    <!-- info per chi non puo rispondere/votare -->
+    <!-- info per chi non puo rispondere ne votare (squadra che ha posto) -->
     <div class="toon-sm toon p-3 text-center text-sm" style="color:var(--navy-soft)" x-show="!canAnswerOrVote()">
-      <template x-if="currentRound()?.asking_team_id === me?.team_id">
-        <span>La tua squadra ha posto questa domanda. Aspetta la risposta avversaria.</span>
-      </template>
-      <template x-if="currentRound()?.asking_team_id !== me?.team_id && !canAnswerOrVote()">
-        <span>La domanda non e indirizzata alla tua squadra. Aspetta…</span>
-      </template>
+      <span>La tua squadra ha posto questa domanda. Aspettate le risposte degli altri.</span>
     </div>
   </section>
 
   <!-- ===== TURN_REVEAL ===== -->
   <section x-show="me && state?.phase === 'turn_reveal' && currentQuestion()" class="toon p-4 flex flex-col gap-3" x-cloak>
-    <div class="text-center">
-      <div class="display-font text-base uppercase mb-1" style="color:var(--navy-soft)">Risposta corretta</div>
-      <div class="display-font" style="font-size:64px; color:var(--success); -webkit-text-stroke: 1px var(--navy);" x-text="currentQuestion()?.correct"></div>
+    <!-- Testo della domanda (resta visibile per ripasso) -->
+    <div class="toon-sm toon p-4">
+      <div class="display-font text-[10px] uppercase mb-2 px-2 py-0.5 inline-block toon toon-sm toon-coral" style="box-shadow: 2px 2px 0 var(--navy);">DOMANDA</div>
+      <p class="display-font leading-tight" style="font-size:20px; color: var(--navy);" x-text="currentQuestion()?.text"></p>
     </div>
-    <div class="toon-sm toon p-3" style="background: var(--cream-deep);">
-      <div class="text-sm font-medium" x-text="currentQuestion()?.options.find(o => o.letter === currentQuestion()?.correct)?.text"></div>
+
+    <!-- Tutte le 4 opzioni con la corretta evidenziata -->
+    <div class="grid grid-cols-1 gap-2">
+      <template x-for="opt in currentQuestion()?.options || []" :key="opt.letter">
+        <div class="toon-sm toon p-2.5 flex items-center gap-3"
+             :class="opt.letter === currentQuestion()?.correct ? 'reveal-correct' : ''"
+             :style="opt.letter !== currentQuestion()?.correct ? 'opacity:0.65' : ''">
+          <div class="opt-letter" x-text="opt.letter"></div>
+          <div class="text-sm font-medium leading-snug flex-1" x-text="opt.text"></div>
+          <template x-if="opt.letter === currentQuestion()?.correct">
+            <span class="display-font text-sm flex-shrink-0" style="color:var(--success); -webkit-text-stroke: 0.4px var(--navy);">✓</span>
+          </template>
+        </div>
+      </template>
     </div>
+
+    <!-- Tabella risposte di tutte le squadre, in ordine di arrivo -->
+    <div x-show="(currentRound()?.answers || []).length" class="toon-sm toon p-3" style="background: var(--cream-deep);">
+      <div class="display-font text-[11px] uppercase mb-2" style="color:var(--navy-soft)">Risposte</div>
+      <div class="grid gap-1.5">
+        <template x-for="a in (currentRound()?.answers || [])" :key="a.captain_id">
+          <div class="flex items-center gap-2 text-sm" :style="!a.scored ? 'opacity:0.55' : ''">
+            <span class="display-font text-xs px-1.5 py-0.5 toon toon-sm" style="background:#fff;" x-text="a.order + 'ª'"></span>
+            <span class="display-font text-sm" :style="`color:${state?.teams?.[a.team_id]?.color}; -webkit-text-stroke: 0.3px var(--navy);`" x-text="state?.teams?.[a.team_id]?.name"></span>
+            <span class="ml-auto display-font text-base" x-text="a.letter"></span>
+            <span class="display-font text-base" :style="a.is_correct ? 'color:var(--success)' : 'color:var(--coral)'" x-text="a.is_correct ? '✓' : '✗'"></span>
+            <template x-if="a.scored"><span class="text-[10px] uppercase px-1.5 py-0.5 toon-sm toon toon-yellow display-font" style="box-shadow:1.5px 1.5px 0 var(--navy);">conta</span></template>
+          </div>
+        </template>
+      </div>
+      <template x-if="currentRound()?.timed_out && (currentRound()?.answers || []).every(a => !a.scored)">
+        <div class="text-[11px] mt-2" style="color:var(--navy-soft)">Nessuna risposta della squadra titolata: tempo scaduto.</div>
+      </template>
+    </div>
+
     <!-- esito per la mia squadra -->
     <div class="toon-sm toon p-3 text-center" :style="(currentRound()?.points_delta?.[me?.team_id] || 0) >= 0 ? 'background:#DEF7E1; border-color:var(--success);' : 'background:#FFE4E0; border-color:var(--coral);'">
       <span class="display-font text-2xl" :style="(currentRound()?.points_delta?.[me?.team_id] || 0) >= 0 ? 'color:var(--success)' : 'color:var(--coral)'"
