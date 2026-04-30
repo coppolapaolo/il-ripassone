@@ -76,7 +76,7 @@ Stampa in console:
 6. Admin clicca *Chiudi elezioni e annuncia capitani* → fase **PRE_GAME**
 7. **PRE_GAME**: capitani annunciati su tutti i client. Solo il capitano può rinominare la sua squadra. Il cambio squadra è bloccato. Edit nome/cognome ancora possibile. L'admin può tornare alle elezioni se serve.
 8. Admin clicca *Avvia sfida* (sorteggia ordine, apre primo turno)
-9. Loop: durante TURN_CHOICE i membri filtrano il pool e **propongono in tempo reale** — appena toccano una domanda, una puntata o un bersaglio, la proposta è già visibile al capitano (chip colorati sotto ogni opzione, nessun bottone "Proponi" da premere). Il capitano può adottarne una con un tap o decidere autonomamente. Countdown → risposta → reveal → *Next turn*. Tra un turno e l'altro l'admin può modificare i tempi (sezione *⏱ Tempi prossimo turno* nella tab Partita): il nuovo `seconds` e i `time_factors` valgono dal turno seguente. Un *round* è un giro completo: con N squadre **attive** (score>0) e R round si giocano fino a N×R sfide. Una squadra che va a zero (o sotto) viene **saltata** quando tocca a lei porre, ma resta in classifica e può rispondere alle domande aperte; se torna sopra zero, riprende a porre nei round successivi.
+9. Loop: durante TURN_CHOICE i membri filtrano il pool e **propongono in tempo reale** — appena toccano una domanda, una puntata o un bersaglio, la proposta è già visibile al capitano (chip colorati sotto ogni opzione, nessun bottone "Proponi" da premere). Il capitano può adottarne una con un tap o decidere autonomamente. Countdown → tutti i capitani avversari rispondono entro il timer (o reveal anticipato se hanno risposto tutti) → reveal → *Next turn*. Durante TURN_QUESTION nessun client può vedere chi ha scelto cosa: solo un contatore anonimo "X/Y squadre hanno risposto". Tra un turno e l'altro l'admin può modificare i tempi (sezione *⏱ Tempi prossimo turno* nella tab Partita): il nuovo `seconds` e i `time_factors` valgono dal turno seguente. Un *round* è un giro completo: con N squadre **attive** (score>0) e R round si giocano fino a N×R sfide. Una squadra che va a zero (o sotto) viene **saltata** quando tocca a lei porre, ma resta in classifica e può rispondere alle domande aperte; se torna sopra zero, riprende a porre nei round successivi.
 10. La tab **Lobby** di admin resta consultabile in ogni fase: durante la sfida mostra le squadre con capitano + membri, e lo storico dei voti dell'elezione (read-only).
 11. A fine sfida: classifica finale su `/display` e tab Partita di admin
 
@@ -120,10 +120,35 @@ Note pratiche:
 Il countdown è **server-side** (asyncio task) e dura `seconds × time_factor[difficolta]` (default `0.5 / 1.0 / 1.4` su `seconds=90`).
 Cambia colore a 10s (giallo) e a 5s (rosso pulsante) sul display, con flash full-screen e suoni (il flash è disattivato in modalità `--serious`).
 
-### Regole di scoring
+### Regole di gioco e scoring
 
-- **Domanda a squadra X**: corretto → X vince la puntata da chi pone; sbagliato/timeout → X perde a chi pone
-- **Domanda aperta**: prima squadra che risponde blocca le altre. Corretto → vince da chi pone; sbagliato → perde a chi pone; timeout → tutte le altre squadre perdono `bet/(N-1)` troncato all'unità, somma a chi pone
+La domanda resta aperta **a tutti i capitani avversari** fino alla fine
+del countdown (o finché non hanno risposto tutti). Lo scoring scatta una
+sola volta, sulla **prima risposta della squadra titolata**:
+
+- **Domanda a squadra X**: solo la prima risposta del capitano di X muove
+  i punti. Corretto → X vince la puntata da chi pone; sbagliato/timeout
+  → X perde a chi pone. I capitani delle altre squadre possono comunque
+  rispondere "per ripasso" — la loro risposta compare al reveal ma non
+  cambia i punteggi.
+- **Domanda aperta**: la prima risposta in assoluto è quella che muove
+  i punti. Corretto → vince da chi pone; sbagliato → perde a chi pone.
+  Le risposte successive servono al ripasso e vengono mostrate al reveal
+  con il tempo di risposta. Timeout senza nessuna risposta scorante →
+  tutte le squadre tranne chi pone perdono `bet/(N-1)` troncato
+  all'unità, somma a chi pone.
+
+**Anti-leak server-side**: durante TURN_QUESTION i `team.score`, le
+lettere scelte e i `points_delta` non sono presenti nel payload state/full
+(scoring calcolato come pending, applicato solo al passaggio in REVEAL).
+Anche i voti dei membri non-capitani vengono filtrati per-viewer: solo il
+proprio capitano li riceve. Così nessun capitano può dedurre la
+correttezza della prima risposta dal punteggio o dai voti del compagno
+mentre sta ancora pensando.
+
+Al reveal: domanda completa, tutte le 4 opzioni con la corretta
+evidenziata, tabella delle risposte ordinate per arrivo con il tempo
+in secondi accanto a ciascuna.
 
 ---
 
