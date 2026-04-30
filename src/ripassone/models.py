@@ -89,7 +89,8 @@ class Answer(BaseModel):
     captain_id: str
     letter: Letter
     is_correct: bool
-    order: int  # 1 = primo, 2 = secondo, ...
+    order: int          # 1 = primo, 2 = secondo, ...
+    at_elapsed: int     # secondi trascorsi dall'inizio del countdown al click
     scored: bool
 
 

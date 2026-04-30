@@ -911,6 +911,11 @@ async def captain_answer(captain_id: str, option: Letter) -> None:
             round_.target == "open" or round_.target == team.id
         )
 
+        # tempo trascorso dall'inizio del countdown
+        total = round_.seconds_total or 0
+        left = STATE.countdown_seconds_left if STATE.countdown_seconds_left is not None else total
+        at_elapsed = max(0, total - left)
+
         order = len(round_.answers) + 1
         round_.answers.append(Answer(
             team_id=team.id,
@@ -918,6 +923,7 @@ async def captain_answer(captain_id: str, option: Letter) -> None:
             letter=option,
             is_correct=is_correct,
             order=order,
+            at_elapsed=at_elapsed,
             scored=scores,
         ))
 
@@ -925,13 +931,17 @@ async def captain_answer(captain_id: str, option: Letter) -> None:
             round_.answer_letter = option
             round_.answer_team_id = team.id
             round_.is_correct = is_correct
-            _apply_scoring_for_answer(round_, team.id, is_correct)
+            # Calcola il delta come PENDING: i punti restano nel round_, ma
+            # i team.score NON vengono toccati finche non si entra in REVEAL
+            # (altrimenti sul display il bump di score leakerebbe la correttezza).
+            round_.points_delta = _compute_delta_for_answer(round_, team.id, is_correct)
 
         # Early reveal: tutti i capitani eleggibili online hanno risposto.
         eligible = set(_eligible_captain_ids_online(round_.asking_team_id))
         answered = {a.captain_id for a in round_.answers}
         if eligible and eligible.issubset(answered):
             STATE.countdown_seconds_left = None
+            _apply_pending_delta(round_)
             transition(Phase.TURN_REVEAL)
 
 
@@ -959,12 +969,13 @@ async def tick_countdown() -> str:
         if round_ is None:
             return "stopped"
         round_.timed_out = True
-        # Se nessuno ha ancora scorato, applica le penalita di timeout.
-        # Se invece qualcuno ha gia risposto e scorato (open: il primo;
-        # target=X: il capitano di X), lo scoring e gia avvenuto in
-        # captain_answer e non va riapplicato.
+        # Se nessuno ha ancora scorato, calcola il delta di timeout.
+        # Altrimenti il delta era gia stato calcolato dalla risposta scorante.
+        # In entrambi i casi i team.score non sono ancora stati toccati:
+        # li applichiamo qui prima del transition.
         if round_.answer_letter is None:
-            _apply_scoring_for_timeout(round_)
+            round_.points_delta = _compute_delta_for_timeout(round_)
+        _apply_pending_delta(round_)
         STATE.countdown_seconds_left = None
         transition(Phase.TURN_REVEAL)
         return "timeout"
@@ -973,38 +984,28 @@ async def tick_countdown() -> str:
 # ============================================================
 # Scoring
 # ============================================================
-def _apply_scoring_for_answer(round_: Round, answering_team_id: str, is_correct: bool) -> None:
-    """Applica i punti dopo che una squadra ha risposto (corretto/sbagliato)."""
+# Pattern a due fasi: durante TURN_QUESTION lo scoring viene CALCOLATO
+# e memorizzato in round_.points_delta (pending), ma NON applicato ai
+# team.score. L'applicazione avviene al passaggio a TURN_REVEAL: cosi
+# il punteggio non leaka la correttezza della prima risposta agli altri
+# capitani che stanno ancora pensando.
+def _compute_delta_for_answer(round_: Round, answering_team_id: str, is_correct: bool) -> dict[str, int]:
+    """Calcola il delta punti di una risposta scorante. Non lo applica."""
     bet = round_.bet or 0
     asking_id = round_.asking_team_id
     delta: dict[str, int] = {}
-
-    if round_.target == "open":
-        # aperta a tutti: chi risponde
-        if is_correct:
-            #  vince bet -> chi ha posto perde bet
-            delta[answering_team_id] = +bet
-            delta[asking_id] = -bet
-        else:
-            #  perde bet -> chi ha posto vince bet
-            delta[answering_team_id] = -bet
-            delta[asking_id] = +bet
+    # open e target hanno la stessa regola "due piatti" sul singolo answerer
+    if is_correct:
+        delta[answering_team_id] = +bet
+        delta[asking_id] = -bet
     else:
-        # target: la squadra X (la stessa che ha risposto, validato a monte)
-        if is_correct:
-            # X vince bet, chi ha posto perde bet
-            delta[answering_team_id] = +bet
-            delta[asking_id] = -bet
-        else:
-            # X perde bet, chi ha posto vince bet
-            delta[answering_team_id] = -bet
-            delta[asking_id] = +bet
-
-    _commit_delta(round_, delta)
+        delta[answering_team_id] = -bet
+        delta[asking_id] = +bet
+    return delta
 
 
-def _apply_scoring_for_timeout(round_: Round) -> None:
-    """Applica i punti se il countdown scade senza risposta.
+def _compute_delta_for_timeout(round_: Round) -> dict[str, int]:
+    """Calcola il delta punti di un timeout senza risposta scorante.
 
     Regole:
     - target = team X: X perde bet, chi ha posto vince bet
@@ -1019,7 +1020,7 @@ def _apply_scoring_for_timeout(round_: Round) -> None:
         others = [tid for tid in STATE.teams if tid != asking_id]
         n = len(others)
         if n == 0:
-            return
+            return delta
         share = bet // n  # troncato come da specifica
         total_to_asker = 0
         for tid in others:
@@ -1030,17 +1031,16 @@ def _apply_scoring_for_timeout(round_: Round) -> None:
         target = round_.target
         delta[target] = -bet
         delta[asking_id] = +bet
+    return delta
 
-    _commit_delta(round_, delta)
 
-
-def _commit_delta(round_: Round, delta: dict[str, int]) -> None:
-    """Applica delta ai score delle squadre e lo registra nel round."""
-    round_.points_delta.clear()
-    for team_id, d in delta.items():
+def _apply_pending_delta(round_: Round) -> None:
+    """Applica round_.points_delta ai team.score. Da chiamare SOLO al
+    transition verso TURN_REVEAL: prima i punteggi devono restare congelati
+    al valore di inizio round (anti-leak)."""
+    for team_id, d in round_.points_delta.items():
         if team_id in STATE.teams:
             STATE.teams[team_id].score += d
-        round_.points_delta[team_id] = d
 
 
 # ============================================================

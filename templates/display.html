@@ -282,6 +282,7 @@
                         :style="`background:#fff; ${a.scored ? 'box-shadow: 3px 3px 0 var(--navy);' : 'opacity:0.7;'}`">
                     <span style="color:var(--navy-soft); font-size:11px;" x-text="a.order + 'ª'"></span>
                     <span :style="`color:${state?.teams?.[a.team_id]?.color}; -webkit-text-stroke: 0.3px var(--navy);`" x-text="state?.teams?.[a.team_id]?.name"></span>
+                    <span class="tabular-nums" style="color:var(--navy-soft); font-size:11px;" x-text="a.at_elapsed + 's'"></span>
                   </span>
                 </template>
               </div>

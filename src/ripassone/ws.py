@@ -91,11 +91,16 @@ def _redact_round_for_viewer(round_dict: dict, phase: str, viewer_player_id: str
         filtered = {}
     round_dict["member_votes"] = filtered
 
-    # answers + answer_* nascosti durante TURN_QUESTION
+    # answers + answer_* + points_delta nascosti durante TURN_QUESTION
     if phase == Phase.TURN_QUESTION.value:
         redacted: list[dict] = []
         for a in round_dict.get("answers") or []:
-            r = {"team_id": a["team_id"], "captain_id": a["captain_id"], "order": a["order"]}
+            r = {
+                "team_id": a["team_id"],
+                "captain_id": a["captain_id"],
+                "order": a["order"],
+                "at_elapsed": a.get("at_elapsed", 0),
+            }
             if viewer_player_id is not None and a["captain_id"] == viewer_player_id:
                 # il viewer-capitano vede la propria letter (cortesia post-refresh)
                 r["letter"] = a["letter"]
@@ -106,6 +111,9 @@ def _redact_round_for_viewer(round_dict: dict, phase: str, viewer_player_id: str
         round_dict["answer_letter"] = None
         round_dict["answer_team_id"] = None
         round_dict["is_correct"] = None
+        # points_delta puo essere gia popolato come PENDING da captain_answer:
+        # nascosto perche il segno trapelerebbe la correttezza.
+        round_dict["points_delta"] = {}
 
 
 def state_snapshot_for(viewer_player_id: str | None) -> dict:

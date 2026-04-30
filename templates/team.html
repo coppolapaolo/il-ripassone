@@ -844,9 +844,9 @@
           <div class="flex items-center gap-2 text-sm" :style="!a.scored ? 'opacity:0.55' : ''">
             <span class="display-font text-xs px-1.5 py-0.5 toon toon-sm" style="background:#fff;" x-text="a.order + 'ª'"></span>
             <span class="display-font text-sm" :style="`color:${state?.teams?.[a.team_id]?.color}; -webkit-text-stroke: 0.3px var(--navy);`" x-text="state?.teams?.[a.team_id]?.name"></span>
+            <span class="display-font text-xs tabular-nums" style="color:var(--navy-soft);" x-text="a.at_elapsed + 's'"></span>
             <span class="ml-auto display-font text-base" x-text="a.letter"></span>
             <span class="display-font text-base" :style="a.is_correct ? 'color:var(--success)' : 'color:var(--coral)'" x-text="a.is_correct ? '✓' : '✗'"></span>
-            <template x-if="a.scored"><span class="text-[10px] uppercase px-1.5 py-0.5 toon-sm toon toon-yellow display-font" style="box-shadow:1.5px 1.5px 0 var(--navy);">conta</span></template>
           </div>
         </template>
       </div>
