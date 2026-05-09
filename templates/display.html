@@ -197,6 +197,13 @@
                 <template x-if="currentRound()?.target !== 'open' && t.id === currentRound()?.target">
                   <span class="display-font text-[11px] uppercase px-1.5 py-0.5 rounded toon-sm" style="background:var(--yellow); color:var(--navy); border:2px solid var(--navy); box-shadow:2px 2px 0 var(--navy);">RISP</span>
                 </template>
+                <!-- Pip "ha risposto" durante TURN_QUESTION: visibile per le squadre
+                     che hanno gia cliccato. NON rivela cosa hanno scelto. -->
+                <template x-if="state?.phase === 'turn_question' && (currentRound()?.answers || []).some(a => a.team_id === t.id)">
+                  <span class="display-font text-[11px] uppercase px-1.5 py-0.5 rounded toon-sm flex items-center gap-1" style="background:var(--success); color:#fff; border:2px solid var(--navy); box-shadow:2px 2px 0 var(--navy);">
+                    <span>✓</span><span>RISP</span>
+                  </span>
+                </template>
               </div>
               <div class="flex items-baseline gap-1.5">
                 <span class="display-font text-4xl tabular-nums leading-none"
@@ -278,11 +285,20 @@
             <template x-if="state?.phase === 'turn_reveal'">
               <div class="flex flex-wrap gap-2 pl-[3.5rem]">
                 <template x-for="a in (currentRound()?.answers || []).filter(a => a.letter === opt.letter)" :key="a.captain_id">
-                  <span class="toon-sm toon px-2 py-0.5 display-font text-sm flex items-center gap-1.5"
-                        :style="`background:#fff; ${a.scored ? 'box-shadow: 3px 3px 0 var(--navy);' : 'opacity:0.7;'}`">
-                    <span style="color:var(--navy-soft); font-size:11px;" x-text="a.order + 'ª'"></span>
+                  <!-- Enfasi: order==1 (piu veloce) > scored (titolata) > altri.
+                       Su "open" 1ª e scored coincidono; su "target=X" possono divergere. -->
+                  <span class="toon toon-sm display-font flex items-center gap-1.5"
+                        :style="a.order === 1
+                          ? 'background:var(--yellow); border:3px solid var(--navy); box-shadow: 5px 5px 0 var(--navy); padding:6px 12px; font-size:18px;'
+                          : `background:#fff; padding:3px 9px; font-size:14px; ${a.scored ? 'box-shadow: 3px 3px 0 var(--navy);' : 'opacity:0.6;'}`">
+                    <template x-if="a.order === 1">
+                      <span class="display-font" style="color:var(--coral); -webkit-text-stroke: 0.3px var(--navy);">⚡ 1ª</span>
+                    </template>
+                    <template x-if="a.order !== 1">
+                      <span style="color:var(--navy-soft); font-size:11px;" x-text="a.order + 'ª'"></span>
+                    </template>
                     <span :style="`color:${state?.teams?.[a.team_id]?.color}; -webkit-text-stroke: 0.3px var(--navy);`" x-text="state?.teams?.[a.team_id]?.name"></span>
-                    <span class="tabular-nums" style="color:var(--navy-soft); font-size:11px;" x-text="a.at_elapsed + 's'"></span>
+                    <span class="tabular-nums" :style="a.order === 1 ? 'color:var(--navy); font-size:13px;' : 'color:var(--navy-soft); font-size:11px;'" x-text="a.at_elapsed + 's'"></span>
                   </span>
                 </template>
               </div>

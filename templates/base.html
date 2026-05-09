@@ -426,13 +426,16 @@ function ripassoneClient(role) {
         .filter(t => t.id !== r.asking_team_id && t.captain_id).length;
     },
     onPick(letter) {
+      // Per il capitano: il click invia direttamente la risposta (niente
+      // pulsante di conferma — il timer corre, ogni secondo conta).
+      // Per i membri non-capitani: il click invia un voto al proprio capitano.
+      if (this.answerSubmitted) return;
       this.myChoice = letter;
-      if (this.canVote()) this.send('team/vote', { player_id: this.me.id, option: letter });
-    },
-    submitAnswer() {
-      if (!this.myChoice || this.answerSubmitted) return;
-      this.send('captain/answer', { captain_id: this.me.id, option: this.myChoice });
-      // niente flag locale: answerSubmitted e' un getter sul server-state
+      if (this.canAnswer()) {
+        this.send('captain/answer', { captain_id: this.me.id, option: letter });
+      } else if (this.canVote()) {
+        this.send('team/vote', { player_id: this.me.id, option: letter });
+      }
     },
     votesFor(letter) {
       const v = this.currentRound()?.member_votes || {};

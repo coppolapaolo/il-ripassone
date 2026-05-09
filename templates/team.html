@@ -772,11 +772,12 @@
       <p class="display-font leading-tight" style="font-size:22px; color: var(--navy);" x-text="currentQuestion()?.text"></p>
     </div>
 
-    <!-- Opzioni: capitano risponde, membro vota -->
+    <!-- Opzioni: capitano risponde (click = invia), membro vota (click = vota) -->
     <div class="grid grid-cols-1 gap-2.5" x-show="canAnswerOrVote()">
       <template x-for="opt in currentQuestion()?.options || []" :key="opt.letter">
         <button type="button" class="opt-btn"
                 :class="myChoice === opt.letter && 'selected'"
+                :disabled="isCaptainOf(me?.team_id) && answerSubmitted"
                 @click="onPick(opt.letter)">
           <div class="opt-letter" x-text="opt.letter"></div>
           <div class="flex-1">
@@ -798,13 +799,9 @@
       </template>
     </div>
 
-    <!-- CTA capitano -->
-    <div class="cta-sticky-wrap" x-show="isCaptainOf(me?.team_id) && canAnswer()">
-      <button class="answer-cta" :class="answerSubmitted && 'submitted'"
-              :disabled="!myChoice || answerSubmitted" @click="submitAnswer()">
-        <span x-show="!answerSubmitted">RISPONDI · <span x-text="myChoice || '—'"></span></span>
-        <span x-show="answerSubmitted">✓ INVIATA · ATTENDI…</span>
-      </button>
+    <!-- Banner di conferma post-invio (capitano) -->
+    <div x-show="isCaptainOf(me?.team_id) && answerSubmitted" class="toon-sm toon p-3 text-center" style="background:#DEF7E1; border-color:var(--success);">
+      <span class="display-font text-base" style="color:var(--success); -webkit-text-stroke: 0.3px var(--navy);">✓ INVIATA · ATTENDI…</span>
     </div>
 
     <!-- info per chi non puo rispondere ne votare (squadra che ha posto) -->
